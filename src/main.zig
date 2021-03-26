@@ -1,7 +1,9 @@
 const std = @import("std");
 const clap = @import("clap");
 const pages = @import("pages.zig");
+
 const Pages = pages.Pages;
+const GeneralPurposeAllocator = std.heap.GeneralPurposeAllocator;
 
 const params = comptime [_]clap.Param(clap.Help){
     clap.parseParam("-h, --help     Display this help and exit") catch unreachable,
@@ -11,8 +13,6 @@ const params = comptime [_]clap.Param(clap.Help){
 };
 
 pub fn main() anyerror!void {
-    std.log.info("All your codebase are belong to us.", .{});
-
     var diag: clap.Diagnostic = undefined;
     var args = clap.parse(clap.Help, &params, std.heap.page_allocator, &diag) catch |err| {
         diag.report(std.io.getStdErr().outStream(), err) catch {};
@@ -21,16 +21,18 @@ pub fn main() anyerror!void {
     };
     defer args.deinit();
 
+    const got_positional_args: bool = args.positionals().len > 0;
+
     if (args.flag("--help")) {
         try helpExit();
     }
 
     if (args.flag("--update")) {
-        std.debug.print("TODO: implement updating pages", .{});
-        std.process.exit(0);
+        std.debug.print("TODO: implement updating pages\n", .{});
+        if (!got_positional_args) std.process.exit(0);
     }
 
-    if (args.positionals().len <= 0) {
+    if (!got_positional_args) {
         try helpExit();
     }
 
@@ -49,6 +51,13 @@ pub fn main() anyerror!void {
         }
     };
     defer tldr_pages.close();
+
+    var gpa = GeneralPurposeAllocator(.{}){};
+    var allocator = &gpa.allocator;
+    const page_contents = try tldr_pages.pageContents(allocator, args.positionals());
+    defer allocator.free(page_contents);
+
+    std.log.info("{}\n", .{page_contents});
 }
 
 fn helpExit() !void {
