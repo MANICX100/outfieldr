@@ -1,6 +1,7 @@
 const std = @import("std");
 const clap = @import("clap");
 const pages = @import("pages.zig");
+const pretty = @import("pretty.zig");
 
 const Pages = pages.Pages;
 const GeneralPurposeAllocator = std.heap.GeneralPurposeAllocator;
@@ -57,7 +58,9 @@ pub fn main() anyerror!void {
     const page_contents = try tldr_pages.pageContents(allocator, args.positionals());
     defer allocator.free(page_contents);
 
-    std.log.info("{}\n", .{page_contents});
+    const pretty_contents = try pretty.prettify(allocator, page_contents);
+    const stdout = std.io.getStdOut();
+    _ = try stdout.writer().print("{}\n", .{pretty_contents});
 }
 
 fn helpExit() !void {
