@@ -1,5 +1,7 @@
 const std = @import("std");
 const clap = @import("clap");
+const pages = @import("pages.zig");
+const Pages = pages.Pages;
 
 const params = comptime [_]clap.Param(clap.Help){
     clap.parseParam("-h, --help     Display this help and exit") catch unreachable,
@@ -27,6 +29,26 @@ pub fn main() anyerror!void {
         std.debug.print("TODO: implement updating pages", .{});
         std.process.exit(0);
     }
+
+    if (args.positionals().len <= 0) {
+        try helpExit();
+    }
+
+    var tldr_pages = Pages.open(args.option("--lang")) catch |err| {
+        var stderr = std.io.getStdErr();
+        switch (err) {
+            error.FileNotFound => {
+                _ = try stderr.write(
+                    \\Error: Pages do not exist.
+                    \\Perhaps try running `--update`?
+                    \\
+                );
+                std.process.exit(1);
+            },
+            else => return err,
+        }
+    };
+    defer tldr_pages.close();
 }
 
 fn helpExit() !void {
