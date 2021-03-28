@@ -4,7 +4,7 @@ const color = @import("color.zig");
 const Allocator = std.mem.Allocator;
 const Color = color.Color;
 
-const Line = struct {
+const PrettyLine = struct {
     line_type: Type,
     contents: []const u8,
 
@@ -16,11 +16,11 @@ const Line = struct {
         Other,
     };
 
-    /// Parse a slice of string slices into a heap array of Line structs.
+    /// Parse a slice of string slices into a heap array of PrettyLine structs.
     pub fn parseLines(allocator: *Allocator, line_slices: []const []const u8) ![]@This() {
-        var lines_rich = try allocator.alloc(Line, line_slices.len);
+        var lines_rich = try allocator.alloc(@This(), line_slices.len);
         for (line_slices) |l, i| {
-            lines_rich[i] = Line.parseLine(l);
+            lines_rich[i] = @This().parseLine(l);
         }
         return lines_rich;
     }
@@ -28,13 +28,13 @@ const Line = struct {
     pub fn parseLine(l: []const u8) @This() {
         if (l.len > 0) {
             return switch (l[0]) {
-                '>' => .{ .line_type = Line.Type.Whatis, .contents = l[2..] },
-                '-' => .{ .line_type = Line.Type.Desc, .contents = l[2..] },
-                '`' => .{ .line_type = Line.Type.Cmd, .contents = l[1 .. l.len - 1] },
-                else => .{ .line_type = Line.Type.Other, .contents = l },
+                '>' => .{ .line_type = @This().Type.Whatis, .contents = l[2..] },
+                '-' => .{ .line_type = @This().Type.Desc, .contents = l[2..] },
+                '`' => .{ .line_type = @This().Type.Cmd, .contents = l[1 .. l.len - 1] },
+                else => .{ .line_type = @This().Type.Other, .contents = l },
             };
         } else {
-            return .{ .line_type = Line.Type.Other, .contents = "" };
+            return .{ .line_type = @This().Type.Other, .contents = "" };
         }
     }
 
@@ -124,7 +124,7 @@ pub fn prettify(allocator: *Allocator, contents: []const u8) ![]const u8 {
     defer allocator.free(line_slices);
 
     const skip_lines = 2;
-    const lines_rich = try Line.parseLines(allocator, line_slices[skip_lines..]);
+    const lines_rich = try PrettyLine.parseLines(allocator, line_slices[skip_lines..]);
 
     const pretty: []u8 = try allocator.alloc(u8, prettySize(lines_rich));
     var stream = std.io.fixedBufferStream(pretty);
@@ -168,7 +168,7 @@ fn countLines(contents: []const u8) usize {
 
 /// We're adding terminal escapes and indentation into the tldr page
 /// contents, making it longer. Calculate the new size.
-fn prettySize(pretty_line: []const Line) usize {
+fn prettySize(pretty_line: []const PrettyLine) usize {
     var count: usize = pretty_line.len;
 
     for (pretty_line) |l| {
