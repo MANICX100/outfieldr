@@ -16,6 +16,15 @@ const Line = struct {
         Other,
     };
 
+    /// Parse a slice of string slices into a heap array of Line structs.
+    pub fn parseLines(allocator: *Allocator, line_slices: []const []const u8) ![]@This() {
+        var lines_rich = try allocator.alloc(Line, line_slices.len);
+        for (line_slices) |l, i| {
+            lines_rich[i] = Line.parseLine(l);
+        }
+        return lines_rich;
+    }
+
     pub fn parseLine(l: []const u8) @This() {
         if (l.len > 0) {
             return switch (l[0]) {
@@ -91,20 +100,38 @@ const Line = struct {
             .Other => 0,
         };
     }
+
+    fn argSize(self: *const @This()) usize {
+        var count: usize = 0;
+        var i: usize = 1;
+        while (i < self.contents.len) : (i += 1) {
+            const curr = self.contents[i];
+            const prev = self.contents[i - 1];
+
+            if (curr == '{' and prev == '{') count += 1;
+        }
+        return count * (Color.BrightRed.code().len + self.colorCode().len);
+    }
+
+    fn lineSize(self: *const @This()) usize {
+        return self.contents.len + self.colorCode().len + self.indentWidth() + self.argSize();
+    }
 };
 
 /// Add colors and indentation to the tldr page.
 pub fn prettify(allocator: *Allocator, contents: []const u8) ![]const u8 {
-    const pretty: []u8 = try allocator.alloc(u8, prettySize(contents) * 4); // TODO: Calc actual size needed.
+    const line_slices = try lines(allocator, contents);
+    defer allocator.free(line_slices);
+
+    const skip_lines = 2;
+    const lines_rich = try Line.parseLines(allocator, line_slices[skip_lines..]);
+
+    const pretty: []u8 = try allocator.alloc(u8, prettySize(lines_rich));
     var stream = std.io.fixedBufferStream(pretty);
     var buffered_stream = std.io.bufferedWriter(stream.writer());
 
-    const contentsLines: []const []const u8 = try lines(allocator, contents);
-    defer allocator.free(contentsLines);
-
-    // Skip the title in the first 2 lines.
-    for (contentsLines[2..]) |l| {
-        _ = try Line.parseLine(l).prettyPrint(buffered_stream.writer());
+    for (lines_rich) |l| {
+        _ = try l.prettyPrint(buffered_stream.writer());
     }
     _ = try buffered_stream.write(Color.reset());
 
@@ -114,20 +141,20 @@ pub fn prettify(allocator: *Allocator, contents: []const u8) ![]const u8 {
 
 /// Split up the page by lines.
 fn lines(allocator: *Allocator, contents: []const u8) ![]const []const u8 {
-    const lineSlices = try allocator.alloc([]const u8, countLines(contents));
+    const line_slices = try allocator.alloc([]const u8, countLines(contents));
     var slice: usize = 0;
     var end: usize = 0;
     var start: usize = 0;
 
     while (end < contents.len) : (end += 1) {
         if (contents[end] == '\n') {
-            lineSlices[slice] = contents[start..end];
+            line_slices[slice] = contents[start..end];
             start = end + 1;
             slice += 1;
         }
     }
 
-    return lineSlices;
+    return line_slices;
 }
 
 /// Count the number of lines in the tldr page.
@@ -141,23 +168,15 @@ fn countLines(contents: []const u8) usize {
 
 /// We're adding terminal escapes and indentation into the tldr page
 /// contents, making it longer. Calculate the new size.
-fn prettySize(contents: []const u8) usize {
-    var count: usize = 0;
-    var i: usize = 1;
+fn prettySize(pretty_line: []const Line) usize {
+    var count: usize = pretty_line.len;
 
-    while (contents[i] != '\n') : (i += 1) {}
-
-    while (i < contents.len) : (i += 1) {
-        var curr = contents[i];
-        var prev = contents[i - 1];
-
-        if (curr == '{' and prev == '{') count += 1;
-        if (curr == '-' and prev == '\n') count += 1;
-        if (curr == '`' and prev == '\n') count += 1;
-        if (curr == '>' and prev == '\n') count += 1;
+    for (pretty_line) |l| {
+        count += l.lineSize();
     }
+    count += Color.reset().len;
 
-    return contents.len + count * 16;
+    return count;
 }
 
 test "countLines" {
