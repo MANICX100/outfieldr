@@ -13,13 +13,8 @@ pub const Pages = struct {
     language: ?[]const u8,
 
     pub fn open(lang: ?[]const u8) !@This() {
-        var buf: [std.fs.MAX_PATH_BYTES]u8 = undefined;
-        var fba = FixedBufferAllocator.init(&buf);
-        const appdata_path = try std.fs.getAppDataDir(&fba.allocator, prog_name);
-        defer fba.allocator.free(appdata_path);
-
         return @This(){
-            .appdata = try std.fs.cwd().openDir(appdata_path, .{}),
+            .appdata = try appdataDir(),
             .language = lang,
         };
     }
@@ -106,6 +101,13 @@ pub const Pages = struct {
         }
 
         return pages_dir;
+    }
+
+    fn appdataDir() !Dir {
+        var buf: [std.fs.MAX_PATH_BYTES]u8 = undefined;
+        var fba = FixedBufferAllocator.init(&buf);
+        const appdata_path = try std.fs.getAppDataDir(&fba.allocator, prog_name);
+        return std.fs.cwd().openDir(appdata_path, .{});
     }
 };
 
