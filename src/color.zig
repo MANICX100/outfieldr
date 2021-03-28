@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const term_esc = "\\033[";
+const term_esc = "\x1b[";
 
 pub const Color = enum {
     Black,
