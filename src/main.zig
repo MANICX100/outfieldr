@@ -16,7 +16,7 @@ const params = comptime [_]clap.Param(clap.Help){
 pub fn main() anyerror!void {
     var diag: clap.Diagnostic = undefined;
     var args = clap.parse(clap.Help, &params, std.heap.page_allocator, &diag) catch |err| {
-        diag.report(std.io.getStdErr().outStream(), err) catch {};
+        diag.report(std.io.getStdErr().writer(), err) catch {};
         try helpExit();
         return err;
     };
@@ -64,7 +64,7 @@ pub fn main() anyerror!void {
 }
 
 fn helpExit() !void {
-    const stderr = std.io.getStdErr().outStream();
+    const stderr = std.io.getStdErr().writer();
 
     try stderr.print("Usage: {} ", .{std.os.argv[0]});
     try clap.usage(stderr, &params);
