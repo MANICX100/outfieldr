@@ -15,6 +15,7 @@ pub fn build(b: *Builder) void {
     exe.setTarget(target);
     exe.setBuildMode(mode);
     exe.install();
+    exe.setOutputDir("bin");
 
     exe.addPackagePath("clap", "./lib/zig-clap/clap.zig");
 
