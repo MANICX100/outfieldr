@@ -38,38 +38,38 @@ const PrettyLine = struct {
         }
     }
 
-    pub fn prettyPrint(self: *const @This(), writer: anytype) !void {
-        _ = try writer.write(self.colorCode());
+    pub fn prettyPrint(this: *const @This(), writer: anytype) !void {
+        _ = try writer.write(this.colorCode());
 
-        var ind = self.indentWidth();
+        var ind = this.indentWidth();
         while (ind > 0) : (ind -= 1) {
             _ = try writer.write(" ");
         }
 
-        try self.printLine(writer);
+        try this.printLine(writer);
     }
 
-    pub fn printLine(self: *const @This(), writer: anytype) !void {
-        if (self.contents.len > 0) {
+    pub fn printLine(this: *const @This(), writer: anytype) !void {
+        if (this.contents.len > 0) {
             var i: usize = 1;
-            while (i < self.contents.len) : (i += 1) {
-                const curr = self.contents[i];
-                const prev = self.contents[i - 1];
+            while (i < this.contents.len) : (i += 1) {
+                const curr = this.contents[i];
+                const prev = this.contents[i - 1];
 
                 if (curr == '{' and prev == '{') {
                     _ = try writer.write(Color.BrightRed.code());
                     i += 1;
                 } else if (curr == '}' and prev == '}') {
-                    _ = try writer.write(self.colorCode());
+                    _ = try writer.write(this.colorCode());
                     i += 1;
                 } else {
                     _ = try writer.write(&[_]u8{prev});
                 }
             }
 
-            const last = self.contents[self.contents.len - 1];
-            if (self.contents.len > 2) {
-                const last_prev = self.contents[self.contents.len - 2];
+            const last = this.contents[this.contents.len - 1];
+            if (this.contents.len > 2) {
+                const last_prev = this.contents[this.contents.len - 2];
                 if (last != '}' and last_prev != '}') {
                     _ = try writer.write(&[_]u8{last});
                 }
@@ -81,8 +81,8 @@ const PrettyLine = struct {
         _ = try writer.write("\n");
     }
 
-    fn colorCode(self: *const @This()) []const u8 {
-        return switch (self.line_type) {
+    fn colorCode(this: *const @This()) []const u8 {
+        return switch (this.line_type) {
             .Whatis => Color.reset(),
             .Desc => Color.Green.code(),
             .Cmd => Color.Red.code(),
@@ -91,8 +91,8 @@ const PrettyLine = struct {
         };
     }
 
-    fn indentWidth(self: *const @This()) u8 {
-        return switch (self.line_type) {
+    fn indentWidth(this: *const @This()) u8 {
+        return switch (this.line_type) {
             .Whatis => 0,
             .Desc => 2,
             .Cmd => 6,
@@ -101,20 +101,20 @@ const PrettyLine = struct {
         };
     }
 
-    fn argSize(self: *const @This()) usize {
+    fn argSize(this: *const @This()) usize {
         var count: usize = 0;
         var i: usize = 1;
-        while (i < self.contents.len) : (i += 1) {
-            const curr = self.contents[i];
-            const prev = self.contents[i - 1];
+        while (i < this.contents.len) : (i += 1) {
+            const curr = this.contents[i];
+            const prev = this.contents[i - 1];
 
             if (curr == '{' and prev == '{') count += 1;
         }
-        return count * (Color.BrightRed.code().len + self.colorCode().len);
+        return count * (Color.BrightRed.code().len + this.colorCode().len);
     }
 
-    fn lineSize(self: *const @This()) usize {
-        return self.contents.len + self.colorCode().len + self.indentWidth() + self.argSize();
+    fn lineSize(this: *const @This()) usize {
+        return this.contents.len + this.colorCode().len + this.indentWidth() + this.argSize();
     }
 };
 

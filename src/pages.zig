@@ -19,16 +19,16 @@ pub const Pages = struct {
         };
     }
 
-    pub fn close(self: *@This()) void {
-        self.appdata.close();
+    pub fn close(this: *@This()) void {
+        this.appdata.close();
     }
 
-    pub fn pageContents(self: *@This(), allocator: *Allocator, command: []const []const u8) ![]const u8 {
+    pub fn pageContents(this: *@This(), allocator: *Allocator, command: []const []const u8) ![]const u8 {
         var buf: [std.fs.MAX_PATH_BYTES * 2]u8 = undefined;
         var fba = FixedBufferAllocator.init(&buf);
-        const page_paths = try self.pagePaths(&fba.allocator, allocator, command);
+        const page_paths = try this.pagePaths(&fba.allocator, allocator, command);
 
-        const page_fd = try self.openFile(&page_paths);
+        const page_fd = try this.openFile(&page_paths);
         defer page_fd.close();
         const page_fd_stat = try page_fd.stat();
 
@@ -37,9 +37,9 @@ pub const Pages = struct {
         return contents[0..bytes_read];
     }
 
-    fn openFile(self: *@This(), paths: []const []const u8) !File {
+    fn openFile(this: *@This(), paths: []const []const u8) !File {
         for (paths) |path| {
-            return self.appdata.openFile(path, .{}) catch |err| {
+            return this.appdata.openFile(path, .{}) catch |err| {
                 switch (err) {
                     error.FileNotFound => continue,
                     else => return err,
@@ -49,8 +49,8 @@ pub const Pages = struct {
         return error.FileNotFound;
     }
 
-    fn pagePaths(self: *@This(), fba: *Allocator, gpa: *Allocator, command: []const []const u8) ![2][]const u8 {
-        const pages_dir = try self.pagesDir(gpa);
+    fn pagePaths(this: *@This(), fba: *Allocator, gpa: *Allocator, command: []const []const u8) ![2][]const u8 {
+        const pages_dir = try this.pagesDir(gpa);
         defer if (!std.mem.eql(u8, pages_dir, "pages")) gpa.free(pages_dir);
         const os_dir = try osDir();
         const filename = try pageFilename(gpa, command);
@@ -92,9 +92,9 @@ pub const Pages = struct {
         };
     }
 
-    fn pagesDir(self: *@This(), allocator: *Allocator) ![]const u8 {
+    fn pagesDir(this: *@This(), allocator: *Allocator) ![]const u8 {
         const pages_dir = "pages";
-        if (self.language) |lang| {
+        if (this.language) |lang| {
             if (!std.mem.eql(u8, lang, "en")) {
                 return std.mem.join(allocator, ".", &[_][]const u8{ pages_dir, lang });
             }

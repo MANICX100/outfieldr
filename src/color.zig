@@ -24,15 +24,15 @@ pub const Color = enum {
         return term_esc ++ "0m";
     }
 
-    pub fn code(comptime self: *const @This()) comptime []const u8 {
+    pub fn code(comptime this: *const @This()) comptime []const u8 {
         comptime {
             @setEvalBranchQuota(2000);
-            return std.fmt.comptimePrint("{}{}m", .{ term_esc, self.fg() });
+            return std.fmt.comptimePrint("{}{}m", .{ term_esc, this.fg() });
         }
     }
 
-    fn fg(comptime self: *const @This()) comptime u8 {
-        return switch (self.*) {
+    fn fg(comptime this: *const @This()) comptime u8 {
+        return switch (this.*) {
             .Black => 30,
             .Red => 31,
             .Green => 32,
@@ -52,8 +52,8 @@ pub const Color = enum {
         };
     }
 
-    fn bg(comptime self: *const @This()) comptime u8 {
-        return self.fg() + 10;
+    fn bg(comptime this: *const @This()) comptime u8 {
+        return this.fg() + 10;
     }
 };
 
