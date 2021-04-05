@@ -24,12 +24,15 @@ pub fn main() anyerror!void {
 
     const got_positional_args: bool = args.positionals().len > 0;
 
+    var gpa = GeneralPurposeAllocator(.{}){};
+    var allocator = &gpa.allocator;
+
     if (args.flag("--help")) {
         try helpExit();
     }
 
     if (args.flag("--update")) {
-        std.debug.print("TODO: implement updating pages\n", .{});
+        try Pages.update(allocator);
         if (!got_positional_args) std.process.exit(0);
     }
 
@@ -53,8 +56,6 @@ pub fn main() anyerror!void {
     };
     defer tldr_pages.close();
 
-    var gpa = GeneralPurposeAllocator(.{}){};
-    var allocator = &gpa.allocator;
     const page_contents = try tldr_pages.pageContents(allocator, args.positionals());
     defer allocator.free(page_contents);
 

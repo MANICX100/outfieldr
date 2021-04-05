@@ -1,4 +1,5 @@
 const std = @import("std");
+const net = @import("net.zig");
 
 const Allocator = std.mem.Allocator;
 const FixedBufferAllocator = std.heap.FixedBufferAllocator;
@@ -11,6 +12,15 @@ const repo_dir = "tldr";
 pub const Pages = struct {
     appdata: Dir,
     language: ?[]const u8,
+
+    pub fn update(allocator: *Allocator) !void {
+        var appdata = try appdataDir();
+        const archive_fname = "master.tar.gz";
+        var fd = try appdata.createFile(archive_fname, .{ .read = true });
+        defer fd.close();
+
+        try net.downloadPagesArchive(&fd);
+    }
 
     pub fn open(lang: ?[]const u8) !@This() {
         return @This(){

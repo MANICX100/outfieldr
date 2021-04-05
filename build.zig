@@ -19,6 +19,9 @@ pub fn build(b: *Builder) void {
 
     exe.addPackagePath("clap", "./lib/zig-clap/clap.zig");
 
+    exe.linkLibC();
+    exe.linkSystemLibrary("curl");
+
     const run_cmd = exe.run();
     run_cmd.step.dependOn(b.getInstallStep());
     if (b.args) |args| {
