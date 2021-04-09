@@ -22,6 +22,7 @@ pub const Pages = struct {
 
         try net.downloadPagesArchive(&fd);
         try archive.extractPages(allocator, &appdata, &fd);
+        try appdata.deleteFile(archive_fname);
     }
 
     pub fn open(lang: ?[]const u8) !@This() {
