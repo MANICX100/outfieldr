@@ -7,7 +7,7 @@ const FixedBufferAllocator = std.heap.FixedBufferAllocator;
 const Dir = std.fs.Dir;
 const File = std.fs.File;
 
-const prog_name = "zealdr";
+const prog_name = "outfieldr";
 const repo_dir = "tldr-master";
 
 pub const Pages = struct {
