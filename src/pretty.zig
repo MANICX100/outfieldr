@@ -14,6 +14,16 @@ const PrettyLine = struct {
         Cmd,
         Arg,
         Other,
+
+        fn colorCode(this: *const @This()) []const u8 {
+            return switch (this.*) {
+                .Whatis => Color.reset(),
+                .Desc => Color.Green.code(),
+                .Cmd => Color.Red.code(),
+                .Arg => Color.BrightRed.code(),
+                .Other => Color.reset(),
+            };
+        }
     };
 
     /// Parse a slice of string slices into a heap array of PrettyLine structs.
@@ -39,7 +49,7 @@ const PrettyLine = struct {
     }
 
     pub fn prettyPrint(this: *const @This(), writer: anytype) !void {
-        _ = try writer.write(this.colorCode());
+        _ = try writer.write(this.line_type.colorCode());
 
         var ind = this.indentWidth();
         while (ind > 0) : (ind -= 1) {
@@ -57,10 +67,10 @@ const PrettyLine = struct {
                 const prev = this.contents[i - 1];
 
                 if (curr == '{' and prev == '{') {
-                    _ = try writer.write(Color.BrightRed.code());
+                    _ = try writer.write(Type.Arg.colorCode());
                     i += 1;
                 } else if (curr == '}' and prev == '}') {
-                    _ = try writer.write(this.colorCode());
+                    _ = try writer.write(this.line_type.colorCode());
                     i += 1;
                 } else {
                     _ = try writer.write(&[_]u8{prev});
@@ -79,16 +89,6 @@ const PrettyLine = struct {
         }
 
         _ = try writer.write("\n");
-    }
-
-    fn colorCode(this: *const @This()) []const u8 {
-        return switch (this.line_type) {
-            .Whatis => Color.reset(),
-            .Desc => Color.Green.code(),
-            .Cmd => Color.Red.code(),
-            .Arg => Color.BrightRed.code(),
-            .Other => Color.reset(),
-        };
     }
 
     fn indentWidth(this: *const @This()) u8 {
@@ -110,11 +110,11 @@ const PrettyLine = struct {
 
             if (curr == '{' and prev == '{') count += 1;
         }
-        return count * (Color.BrightRed.code().len + this.colorCode().len);
+        return count * (Type.Arg.colorCode().len + this.line_type.colorCode().len);
     }
 
     fn lineSize(this: *const @This()) usize {
-        return this.contents.len + this.colorCode().len + this.indentWidth() + this.argSize();
+        return this.contents.len + this.line_type.colorCode().len + this.indentWidth() + this.argSize();
     }
 };
 
