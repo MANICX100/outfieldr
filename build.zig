@@ -11,7 +11,7 @@ pub fn build(b: *Builder) void {
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const mode = b.standardReleaseOptions();
 
-    const exe = b.addExecutable("zealdr", "src/main.zig");
+    const exe = b.addExecutable("tldr", "src/main.zig");
     exe.setTarget(target);
     exe.setBuildMode(mode);
     exe.install();
