@@ -65,7 +65,7 @@ pub const Pages = struct {
     fn pagePaths(this: *@This(), fba: *Allocator, gpa: *Allocator, command: []const []const u8) ![2][]const u8 {
         const pages_dir = try this.pagesDir(gpa);
         defer if (!std.mem.eql(u8, pages_dir, "pages")) gpa.free(pages_dir);
-        const os_dir = try osDir();
+        const os_dir = osDir();
         const filename = try pageFilename(gpa, command);
         defer gpa.free(filename);
 
@@ -95,13 +95,13 @@ pub const Pages = struct {
         return std.mem.concat(allocator, u8, &[_][]const u8{ basename, ".md" });
     }
 
-    fn osDir() ![]const u8 {
+    fn osDir() comptime []const u8 {
         return switch (std.builtin.os.tag) {
             .linux => "linux",
             .macos => "osx",
             .solaris => "sunos",
             .windows => "windows",
-            else => PagesError.UnsupportedOs,
+            else => @compileError("Unsupported OS"),
         };
     }
 
