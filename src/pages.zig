@@ -41,7 +41,7 @@ pub const Pages = struct {
         var fba = FixedBufferAllocator.init(&buf);
         const page_paths = try this.pagePaths(&fba.allocator, allocator, command);
 
-        const page_fd = try this.openFile(&page_paths);
+        const page_fd = try this.openFirstFile(&page_paths);
         defer page_fd.close();
         const page_fd_stat = try page_fd.stat();
 
@@ -50,7 +50,7 @@ pub const Pages = struct {
         return contents[0..bytes_read];
     }
 
-    fn openFile(this: *@This(), paths: []const []const u8) !File {
+    fn openFirstFile(this: *@This(), paths: []const []const u8) !File {
         for (paths) |path| {
             return this.appdata.openFile(path, .{}) catch |err| {
                 switch (err) {
@@ -120,11 +120,34 @@ pub const Pages = struct {
         var buf: [std.fs.MAX_PATH_BYTES]u8 = undefined;
         var fba = FixedBufferAllocator.init(&buf);
         const appdata_path = try std.fs.getAppDataDir(&fba.allocator, prog_name);
-        return std.fs.cwd().openDir(appdata_path, .{});
-    }
-};
 
-const PagesError = error{
-    UnsupportedOs,
-    NoAppData,
+        return std.fs.cwd().openDir(appdata_path, .{}) catch |err| {
+            const stderr = std.io.getStdErr();
+            switch (err) {
+                error.FileNotFound => {
+                    try std.fs.makeDirAbsolute(appdata_path);
+                    return std.fs.cwd().openDir(appdata_path, .{});
+                },
+                error.NotDir => {
+                    try stderr.writer().print(
+                        \\Path '{}' exists but is not a directory.
+                        \\Remove it and retry with `--update`
+                        \\
+                    , .{
+                        appdata_path,
+                    });
+                },
+                error.AccessDenied => {
+                    try stderr.writer().print(
+                        \\Permission denied when trying to write to '{}'.
+                        \\
+                    , .{
+                        appdata_path,
+                    });
+                },
+                else => {},
+            }
+            return err;
+        };
+    }
 };

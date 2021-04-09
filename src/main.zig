@@ -40,23 +40,19 @@ pub fn main() anyerror!void {
         try helpExit();
     }
 
-    var tldr_pages = Pages.open(args.option("--lang")) catch |err| {
-        var stderr = std.io.getStdErr();
+    var tldr_pages = Pages.open(args.option("--lang")) catch std.process.exit(1);
+    defer tldr_pages.close();
+
+    const page_contents = tldr_pages.pageContents(allocator, args.positionals()) catch |err| {
+        const stderr = std.io.getStdErr();
         switch (err) {
             error.FileNotFound => {
-                _ = try stderr.write(
-                    \\Error: Pages do not exist.
-                    \\Perhaps try running `--update`?
-                    \\
-                );
+                _ = try stderr.write("Page not found. Perhaps try updating with `--update`?\n");
                 std.process.exit(1);
             },
             else => return err,
         }
     };
-    defer tldr_pages.close();
-
-    const page_contents = try tldr_pages.pageContents(allocator, args.positionals());
     defer allocator.free(page_contents);
 
     const pretty_contents = try pretty.prettify(allocator, page_contents);
