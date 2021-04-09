@@ -18,6 +18,7 @@ pub fn build(b: *Builder) void {
     exe.setOutputDir("bin");
 
     exe.addPackagePath("clap", "./lib/zig-clap/clap.zig");
+    exe.addPackagePath("tar", "./lib/tar/src/main.zig");
 
     exe.linkLibC();
     exe.linkSystemLibrary("curl");

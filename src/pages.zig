@@ -1,5 +1,6 @@
 const std = @import("std");
 const net = @import("net.zig");
+const archive = @import("archive.zig");
 
 const Allocator = std.mem.Allocator;
 const FixedBufferAllocator = std.heap.FixedBufferAllocator;
@@ -7,7 +8,7 @@ const Dir = std.fs.Dir;
 const File = std.fs.File;
 
 const prog_name = "zealdr";
-const repo_dir = "tldr";
+const repo_dir = "tldr-master";
 
 pub const Pages = struct {
     appdata: Dir,
@@ -20,6 +21,7 @@ pub const Pages = struct {
         defer fd.close();
 
         try net.downloadPagesArchive(&fd);
+        try archive.extractPages(allocator, &appdata, &fd);
     }
 
     pub fn open(lang: ?[]const u8) !@This() {
