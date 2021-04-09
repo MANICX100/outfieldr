@@ -7,9 +7,9 @@ const Pages = pages.Pages;
 const GeneralPurposeAllocator = std.heap.GeneralPurposeAllocator;
 
 const params = comptime [_]clap.Param(clap.Help){
-    clap.parseParam("-h, --help     Display this help and exit") catch unreachable,
-    clap.parseParam("-l, --lang <STR> TLDR page language") catch unreachable,
-    clap.parseParam("-u, --update   Update TLDR pages") catch unreachable,
+    clap.parseParam("-h, --help        Display this help and exit") catch unreachable,
+    clap.parseParam("-l, --lang <STR>  TLDR page language") catch unreachable,
+    clap.parseParam("-f, --fetch       Fetch fresh TLDR pages") catch unreachable,
     clap.parseParam("<POS>...") catch unreachable,
 };
 
@@ -31,8 +31,8 @@ pub fn main() anyerror!void {
         try helpExit();
     }
 
-    if (args.flag("--update")) {
-        try Pages.update(allocator);
+    if (args.flag("--fetch")) {
+        try Pages.fetch(allocator);
         if (!got_positional_args) std.process.exit(0);
     }
 
@@ -47,7 +47,7 @@ pub fn main() anyerror!void {
         const stderr = std.io.getStdErr();
         switch (err) {
             error.FileNotFound => {
-                _ = try stderr.write("Page not found. Perhaps try updating with `--update`?\n");
+                _ = try stderr.write("Page not found. Perhaps try `--fetch`?\n");
                 std.process.exit(1);
             },
             else => return err,

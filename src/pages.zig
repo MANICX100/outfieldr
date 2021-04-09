@@ -14,7 +14,7 @@ pub const Pages = struct {
     appdata: Dir,
     language: ?[]const u8,
 
-    pub fn update(allocator: *Allocator) !void {
+    pub fn fetch(allocator: *Allocator) !void {
         var appdata = try appdataDir();
         const archive_fname = "master.tar.gz";
         var fd = try appdata.createFile(archive_fname, .{ .read = true });
@@ -131,7 +131,7 @@ pub const Pages = struct {
                 error.NotDir => {
                     try stderr.writer().print(
                         \\Path '{}' exists but is not a directory.
-                        \\Remove it and retry with `--update`
+                        \\Remove it and retry with `--fetch`
                         \\
                     , .{
                         appdata_path,
