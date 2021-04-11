@@ -27,6 +27,8 @@ pub fn main() anyerror!void {
     var gpa = GeneralPurposeAllocator(.{}){};
     var allocator = &gpa.allocator;
 
+    const stdout = std.io.getStdOut();
+
     if (args.flag("--help")) {
         try helpExit();
     }
@@ -34,6 +36,7 @@ pub fn main() anyerror!void {
     if (args.flag("--fetch")) {
         try Pages.fetch(allocator);
         if (!got_positional_args) std.process.exit(0);
+        _ = try stdout.writer().write("--\n");
     }
 
     if (!got_positional_args) {
@@ -56,7 +59,6 @@ pub fn main() anyerror!void {
     defer allocator.free(page_contents);
 
     const pretty_contents = try pretty.prettify(allocator, page_contents);
-    const stdout = std.io.getStdOut();
     _ = try stdout.writer().print("{s}\n", .{pretty_contents});
 }
 

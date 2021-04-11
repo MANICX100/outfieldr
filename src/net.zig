@@ -4,9 +4,7 @@ const zfetch = @import("zfetch");
 const File = std.fs.File;
 const Allocator = std.mem.Allocator;
 
-const url = "https://codeload.github.com/tldr-pages/tldr/tar.gz/master";
-
-pub fn downloadPagesArchive(allocator: *Allocator, fd: *File) !void {
+pub fn downloadPagesArchive(allocator: *Allocator, fd: *File, url: []const u8) !usize {
     try zfetch.init();
     defer zfetch.deinit();
 
@@ -18,8 +16,8 @@ pub fn downloadPagesArchive(allocator: *Allocator, fd: *File) !void {
     defer req.deinit();
     try req.do(.GET, headers, null);
 
-    const writer = fd.writer();
     const reader = req.reader();
+    const writer = fd.writer();
 
     var size: usize = 0;
     var buf: [65535]u8 = undefined;
@@ -27,10 +25,9 @@ pub fn downloadPagesArchive(allocator: *Allocator, fd: *File) !void {
         const read = try reader.read(&buf);
         if (read == 0) break;
 
-        std.debug.print("\rDownloaded {} bytes", .{size});
-
         size += read;
+
         try writer.writeAll(buf[0..read]);
     }
-    std.debug.print("\n", .{});
+    return size;
 }
