@@ -33,10 +33,12 @@ pub fn main() anyerror!void {
         try helpExit();
     }
 
+    var fetched = false;
     if (args.flag("--fetch")) {
         try Pages.fetch(allocator);
         if (!got_positional_args) std.process.exit(0);
         _ = try stdout.writer().write("--\n");
+        fetched = true;
     }
 
     if (!got_positional_args) {
@@ -50,7 +52,12 @@ pub fn main() anyerror!void {
         const stderr = std.io.getStdErr();
         switch (err) {
             error.FileNotFound => {
-                _ = try stderr.write("Page not found. Perhaps try `--fetch`?\n");
+                var msg = if (fetched)
+                    "Page doesn't exist in tldr-master. Consider contributing it!\n"
+                else
+                    "Page not found. Perhaps try with `--fetch`\n";
+
+                _ = try stderr.write(msg);
                 std.process.exit(1);
             },
             else => return err,
