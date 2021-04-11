@@ -20,7 +20,7 @@ pub const Pages = struct {
         var fd = try appdata.createFile(archive_fname, .{ .read = true });
         defer fd.close();
 
-        try net.downloadPagesArchive(&fd);
+        try net.downloadPagesArchive(allocator, &fd);
         try archive.extractPages(allocator, &appdata, &fd);
         try appdata.deleteFile(archive_fname);
     }
@@ -130,7 +130,7 @@ pub const Pages = struct {
                 },
                 error.NotDir => {
                     try stderr.writer().print(
-                        \\Path '{}' exists but is not a directory.
+                        \\Path '{s}' exists but is not a directory.
                         \\Remove it and retry with `--fetch`
                         \\
                     , .{
@@ -139,7 +139,7 @@ pub const Pages = struct {
                 },
                 error.AccessDenied => {
                     try stderr.writer().print(
-                        \\Permission denied when trying to write to '{}'.
+                        \\Permission denied when trying to write to '{s}'.
                         \\
                     , .{
                         appdata_path,

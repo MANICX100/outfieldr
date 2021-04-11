@@ -1,2 +1,4 @@
 bin/
 zig-cache/
+.gyro/
+deps.zig

@@ -57,13 +57,13 @@ pub fn main() anyerror!void {
 
     const pretty_contents = try pretty.prettify(allocator, page_contents);
     const stdout = std.io.getStdOut();
-    _ = try stdout.writer().print("{}\n", .{pretty_contents});
+    _ = try stdout.writer().print("{s}\n", .{pretty_contents});
 }
 
 fn helpExit() !void {
     const stderr = std.io.getStdErr().writer();
 
-    try stderr.print("Usage: {} ", .{std.os.argv[0]});
+    try stderr.print("Usage: {s} ", .{std.os.argv[0]});
     try clap.usage(stderr, &params);
     try stderr.print("\nFlags: \n", .{});
     try clap.help(stderr, &params);

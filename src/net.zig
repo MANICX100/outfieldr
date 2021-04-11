@@ -1,42 +1,36 @@
 const std = @import("std");
-const c = @cImport({
-    @cInclude("curl/curl.h");
-    @cInclude("stdio.h");
-});
+const zfetch = @import("zfetch");
 
 const File = std.fs.File;
+const Allocator = std.mem.Allocator;
 
-const url = "http://github.com/tldr-pages/tldr/archive/master.tar.gz";
+const url = "https://codeload.github.com/tldr-pages/tldr/tar.gz/master";
 
-pub fn downloadPagesArchive(fd: *File) !void {
-    const http_handle = c.curl_easy_init() orelse return error.CurlEasyInitFailed;
-    defer c.curl_easy_cleanup(http_handle);
+pub fn downloadPagesArchive(allocator: *Allocator, fd: *File) !void {
+    try zfetch.init();
+    defer zfetch.deinit();
 
-    try curlEasySetOpt(http_handle, .CURLOPT_URL, url);
-    try curlEasySetOpt(http_handle, .CURLOPT_FAILONERROR, @intCast(c_long, 1));
-    try curlEasySetOpt(http_handle, .CURLOPT_WRITEFUNCTION, writeToFileCallback);
-    try curlEasySetOpt(http_handle, .CURLOPT_WRITEDATA, fd);
-    try curlEasySetOpt(http_handle, .CURLOPT_FOLLOWLOCATION, @intCast(c_long, 1));
+    var headers = zfetch.Headers.init(allocator);
+    defer headers.deinit();
+    try headers.appendValue("Accept", "*/*");
 
-    if (c.curl_easy_perform(http_handle) != .CURLE_OK)
-        return error.CurlPerformFailed;
-}
+    var req = try zfetch.Request.init(allocator, url, null);
+    defer req.deinit();
+    try req.do(.GET, headers, null);
 
-fn curlEasySetOpt(curl: *c.CURL, comptime option: c.CURLoption, val: anytype) !void {
-    if (c.curl_easy_setopt(curl, option, val) != .CURLE_OK)
-        return switch (option) {
-            .CURLOPT_URL => error.CurlSetUrlFailed,
-            .CURLOPT_FAILONERROR => error.CurlFailedOnErrorFailed,
-            .CURLOPT_WRITEFUNCTION => error.CurlWriteFunctionFailed,
-            .CURLOPT_WRITEDATA => error.CurlWriteDataFailed,
-            .CURLOPT_FOLLOWLOCATION => error.CurlFollowLocationFailed,
-            else => @compileError("Curl option does not have a corresponding Zig error"),
-        };
-}
+    const writer = fd.writer();
+    const reader = req.reader();
 
-fn writeToFileCallback(data: *c_void, size: c_uint, nmemb: c_uint, user_data: *c_void) callconv(.C) c_uint {
-    var file = @intToPtr(*File, @ptrToInt(user_data));
-    var typed_data = @intToPtr([*]u8, @ptrToInt(data));
-    _ = file.write(typed_data[0 .. nmemb * size]) catch return 0;
-    return nmemb * size;
+    var size: usize = 0;
+    var buf: [65535]u8 = undefined;
+    while (true) {
+        const read = try reader.read(&buf);
+        if (read == 0) break;
+
+        std.debug.print("\rDownloaded {} bytes", .{size});
+
+        size += read;
+        try writer.writeAll(buf[0..read]);
+    }
+    std.debug.print("\n", .{});
 }

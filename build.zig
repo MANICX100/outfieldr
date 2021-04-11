@@ -1,14 +1,8 @@
 const Builder = @import("std").build.Builder;
+const pkgs = @import("deps.zig").pkgs;
 
 pub fn build(b: *Builder) void {
-    // Standard target options allows the person running `zig build` to choose
-    // what target to build for. Here we do not override the defaults, which
-    // means any target is allowed, and the default is native. Other options
-    // for restricting supported target set are available.
     const target = b.standardTargetOptions(.{});
-
-    // Standard release options allow the person running `zig build` to select
-    // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const mode = b.standardReleaseOptions();
 
     const exe = b.addExecutable("tldr", "src/main.zig");
@@ -16,12 +10,7 @@ pub fn build(b: *Builder) void {
     exe.setBuildMode(mode);
     exe.install();
     exe.setOutputDir("bin");
-
-    exe.addPackagePath("clap", "./lib/zig-clap/clap.zig");
-    exe.addPackagePath("tar", "./lib/tar/src/main.zig");
-
-    exe.linkLibC();
-    exe.linkSystemLibrary("curl");
+    pkgs.addAllTo(exe);
 
     const run_cmd = exe.run();
     run_cmd.step.dependOn(b.getInstallStep());

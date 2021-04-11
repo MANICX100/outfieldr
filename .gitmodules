@@ -1,6 +1,0 @@
-[submodule "lib/zig-clap"]
-	path = lib/zig-clap
-	url = https://github.com/Hejsil/zig-clap
-[submodule "lib/tar"]
-	path = lib/tar
-	url = https://github.com/mattnite/tar
