@@ -77,13 +77,13 @@ is [here](bench/hyperfine-outfieldr-tealdeer-ip).
 
 - [X] Make OS overridable
 
+- [X] Improve help page
+
 - [ ] Handle terminals that don't like color
 
 - [ ] List all available pages with small description
 
 - [ ] List all available languages
-
-- [ ] Improve help page
 
 - [ ] Maybe add a config file for whatever
 

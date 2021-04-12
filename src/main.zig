@@ -89,6 +89,23 @@ fn helpExit() !void {
     try clap.usage(stderr, &params);
     try stderr.print("\nFlags: \n", .{});
     try clap.help(stderr, &params);
-
+    _ = try stderr.write(
+        \\
+        \\Examples:
+        \\
+        \\ # View the TLDR page for ip:
+        \\ tldr ip
+        \\
+        \\ # View a multi-word TLDR page:
+        \\ tldr git rebase
+        \\
+        \\ # Specify the languge and OS of the page
+        \\ tldr --lang es --os osx brew
+        \\
+        \\ # Fetch fresh TLDR pages and view page for chown
+        \\ tldr --fetch chown
+        \\
+        \\
+    );
     std.process.exit(1);
 }
