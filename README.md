@@ -26,6 +26,11 @@ To specify language (in this case, español):
 tldr --lang es bash
 ```
 
+You can specify the platform too, it defaults to the platform the source was built for.
+```
+tldr --os osx caffeinate
+```
+
 # Building
 
 You'll need [Zig](https://ziglang.org/) and
