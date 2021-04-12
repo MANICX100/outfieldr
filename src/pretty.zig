@@ -114,7 +114,21 @@ const PrettyLine = struct {
     }
 
     fn lineSize(this: *const @This()) usize {
-        return this.contents.len + this.line_type.colorCode().len + this.indentWidth() + this.argSize();
+        return sumArray(usize, &[_]usize{
+            this.contents.len,
+            this.line_type.colorCode().len,
+            this.indentWidth(),
+            this.argSize(),
+            "\n".len,
+        });
+    }
+
+    fn sumArray(comptime T: type, elems: []T) T {
+        var sum: T = 0;
+        for (elems) |e| {
+            sum += e;
+        }
+        return sum;
     }
 };
 
@@ -169,14 +183,14 @@ fn countLines(contents: []const u8) usize {
 /// We're adding terminal escapes and indentation into the tldr page
 /// contents, making it longer. Calculate the new size.
 fn prettySize(pretty_line: []const PrettyLine) usize {
-    var count: usize = pretty_line.len;
+    var size: usize = 0;
 
     for (pretty_line) |l| {
-        count += l.lineSize();
+        size += l.lineSize();
     }
-    count += Color.reset().len;
+    size += Color.reset().len;
 
-    return count;
+    return size;
 }
 
 test "countLines" {
