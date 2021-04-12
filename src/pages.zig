@@ -15,7 +15,7 @@ pub const Pages = struct {
     language: ?[]const u8,
 
     pub fn fetch(allocator: *Allocator) !void {
-        var appdata = try appdataDir();
+        var appdata = try appdataDir(true);
         const archive_fname = "master.tar.gz";
         var fd = try appdata.createFile(archive_fname, .{ .read = true });
         defer fd.close();
@@ -38,7 +38,7 @@ pub const Pages = struct {
 
     pub fn open(lang: ?[]const u8) !@This() {
         return @This(){
-            .appdata = try appdataDir(),
+            .appdata = try appdataDir(false),
             .language = lang,
         };
     }
@@ -52,13 +52,30 @@ pub const Pages = struct {
         var fba = FixedBufferAllocator.init(&buf);
         const page_paths = try this.pagePaths(&fba.allocator, allocator, command);
 
-        const page_fd = try this.openFirstFile(&page_paths);
+        const page_fd = this.openFirstFile(&page_paths) catch return this.openError(allocator, command);
         defer page_fd.close();
         const page_fd_stat = try page_fd.stat();
 
         const contents = try allocator.alloc(u8, page_fd_stat.size);
         const bytes_read = try page_fd.readAll(contents);
         return contents[0..bytes_read];
+    }
+
+    fn openError(this: *@This(), allocator: *Allocator, command: []const []const u8) ![]const u8 {
+        const appdata_fd = appdataDir(false) catch return error.AppdataNotFound;
+        const repo_dir_fd = appdata_fd.openDir(repo_dir, .{}) catch return error.RepoDirNotFound;
+
+        const pages_dir = try this.pagesDir(allocator);
+        defer allocator.free(pages_dir);
+        const pages_dir_fd = repo_dir_fd.openDir(pages_dir, .{}) catch return error.LanguageNotSupported;
+
+        const os_dir_fname = osDir();
+        const os_dir_fd = pages_dir_fd.openDir(os_dir_fname, .{}) catch return error.OsNotSupported;
+
+        const page_fname = try pageFilename(allocator, command);
+        const page_fd = os_dir_fd.openFile(page_fname, .{}) catch return error.PageNotFound;
+
+        unreachable;
     }
 
     fn openFirstFile(this: *@This(), paths: []const []const u8) !File {
@@ -126,7 +143,7 @@ pub const Pages = struct {
         return allocator.dupe(u8, pages_dir);
     }
 
-    fn appdataDir() !Dir {
+    fn appdataDir(create: bool) !Dir {
         var buf: [std.fs.MAX_PATH_BYTES]u8 = undefined;
         var fba = FixedBufferAllocator.init(&buf);
         const appdata_path = try std.fs.getAppDataDir(&fba.allocator, prog_name);
@@ -135,8 +152,12 @@ pub const Pages = struct {
             const stderr = std.io.getStdErr();
             switch (err) {
                 error.FileNotFound => {
-                    try std.fs.makeDirAbsolute(appdata_path);
-                    return std.fs.cwd().openDir(appdata_path, .{});
+                    if (create) {
+                        try std.fs.cwd().makeDir(appdata_path);
+                        return std.fs.cwd().openDir(appdata_path, .{});
+                    } else {
+                        return error.AppdataNotFound;
+                    }
                 },
                 error.NotDir => {
                     try stderr.writer().print(

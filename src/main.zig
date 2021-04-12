@@ -47,24 +47,12 @@ pub fn main() anyerror!void {
     };
 
     if (positionals) |pos| {
-        var tldr_pages = Pages.open(args.option("--lang")) catch std.process.exit(1);
+        const lang = args.option("--lang");
+
+        var tldr_pages = Pages.open(lang) catch |err| errorExit(err, fetched);
         defer tldr_pages.close();
 
-        const page_contents = tldr_pages.pageContents(allocator, pos) catch |err| {
-            const stderr = std.io.getStdErr();
-            switch (err) {
-                error.FileNotFound => {
-                    var msg = if (fetched)
-                        "Page doesn't exist in tldr-master. Consider contributing it!\n"
-                    else
-                        "Page not found. Perhaps try with `--fetch`\n";
-
-                    _ = try stderr.write(msg);
-                    std.process.exit(1);
-                },
-                else => return err,
-            }
-        };
+        const page_contents = tldr_pages.pageContents(allocator, pos) catch |err| errorExit(err, fetched);
         defer allocator.free(page_contents);
 
         const pretty_contents = try pretty.prettify(allocator, page_contents);
@@ -72,6 +60,24 @@ pub fn main() anyerror!void {
     } else {
         try helpExit();
     }
+}
+
+fn errorExit(err: anyerror, fetched: bool) noreturn {
+    const stderr = std.io.getStdErr().writer();
+    _ = switch (err) {
+        error.AppdataNotFound => stderr.write("Appdata directory not found. Rerun with `--fetch`.\n"),
+        error.RepoDirNotFound => stderr.write("TLDR pages cache not found. Rerun with `--fetch`.\n"),
+        error.LanguageNotSupported => stderr.write("Language not supported.\n"),
+        error.OsNotSupported => stderr.write("Operating system not supported.\n"),
+        error.PageNotFound => stderr.write(msg: {
+            if (fetched)
+                break :msg "Page doesn't exist in tldr-master. Consider contributing it!\n"
+            else
+                break :msg "Page not found. Perhaps try with `--fetch`\n";
+        }),
+        else => unreachable,
+    } catch unreachable;
+    std.process.exit(1);
 }
 
 fn helpExit() !void {
