@@ -67,16 +67,16 @@ pub fn main() anyerror!void {
 fn errorExit(err: anyerror) noreturn {
     const stderr = std.io.getStdErr().writer();
     _ = switch (err) {
-        error.AppdataNotFound => stderr.write("Appdata directory not found. Rerun with `--fetch`.\n"),
-        error.RepoDirNotFound => stderr.write("TLDR pages cache not found. Rerun with `--fetch`.\n"),
-        error.LanguageNotSupported => stderr.write("Language not supported.\n"),
-        error.OsNotSupported => stderr.write("Operating system not supported.\n"),
-        error.PageNotFound => stderr.write(msg: {
+        error.AppdataNotFound => stderr.print("Appdata directory not found. Rerun with `--fetch`.\n", .{}),
+        error.RepoDirNotFound => stderr.print("TLDR pages cache not found. Rerun with `--fetch`.\n", .{}),
+        error.LanguageNotSupported => stderr.print("Language '{s}' not supported.\n", .{lang.?}),
+        error.OsNotSupported => stderr.print("Operating system '{s}' not supported.\n", .{os.?}),
+        error.PageNotFound => s: {
             if (fetch)
-                break :msg "Page doesn't exist in tldr-master. Consider contributing it!\n"
+                break :s stderr.print("Page doesn't exist in tldr-master. Consider contributing it!\n", .{})
             else
-                break :msg "Page not found. Perhaps try with `--fetch`\n";
-        }),
+                break :s stderr.print("Page not found. Perhaps try with `--fetch`\n", .{});
+        },
         else => unreachable,
     } catch unreachable;
     std.process.exit(1);
