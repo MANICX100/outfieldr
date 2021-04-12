@@ -139,6 +139,7 @@ pub fn prettify(allocator: *Allocator, contents: []const u8) ![]const u8 {
 
     const skip_lines = 2;
     const lines_rich = try PrettyLine.parseLines(allocator, line_slices[skip_lines..]);
+    defer allocator.free(lines_rich);
 
     const pretty: []u8 = try allocator.alloc(u8, prettySize(lines_rich));
     var stream = std.io.fixedBufferStream(pretty);
