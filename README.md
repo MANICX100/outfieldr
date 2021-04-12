@@ -31,6 +31,11 @@ You can specify the platform too, it defaults to the platform the source was bui
 tldr --os osx caffeinate
 ```
 
+For more, try:
+```
+tldr --help
+```
+
 # Building
 
 You'll need [Zig](https://ziglang.org/) and
