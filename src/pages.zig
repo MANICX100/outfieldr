@@ -13,6 +13,7 @@ const repo_dir = "tldr-master";
 pub const Pages = struct {
     appdata: Dir,
     language: ?[]const u8,
+    os: ?[]const u8,
 
     pub fn fetch(allocator: *Allocator) !void {
         var appdata = try appdataDir(true);
@@ -36,10 +37,11 @@ pub const Pages = struct {
         _ = try stdout.write("Pages successfully updated\n");
     }
 
-    pub fn open(lang: ?[]const u8) !@This() {
+    pub fn open(lang: ?[]const u8, os: ?[]const u8) !@This() {
         return @This(){
             .appdata = try appdataDir(false),
             .language = lang,
+            .os = os,
         };
     }
 
@@ -69,7 +71,7 @@ pub const Pages = struct {
         defer allocator.free(pages_dir);
         const pages_dir_fd = repo_dir_fd.openDir(pages_dir, .{}) catch return error.LanguageNotSupported;
 
-        const os_dir_fname = osDir();
+        const os_dir_fname = this.osDir();
         const os_dir_fd = pages_dir_fd.openDir(os_dir_fname, .{}) catch return error.OsNotSupported;
 
         const page_fname = try pageFilename(allocator, command);
@@ -93,7 +95,7 @@ pub const Pages = struct {
     fn pagePaths(this: *@This(), fba: *Allocator, gpa: *Allocator, command: []const []const u8) ![2][]const u8 {
         const pages_dir = try this.pagesDir(gpa);
         defer gpa.free(pages_dir);
-        const os_dir = osDir();
+        const os_dir = this.osDir();
         const filename = try pageFilename(gpa, command);
         defer gpa.free(filename);
 
@@ -123,14 +125,17 @@ pub const Pages = struct {
         return std.mem.concat(allocator, u8, &[_][]const u8{ basename, ".md" });
     }
 
-    fn osDir() comptime []const u8 {
-        return switch (std.builtin.os.tag) {
-            .linux => "linux",
-            .macos => "osx",
-            .solaris => "sunos",
-            .windows => "windows",
-            else => @compileError("Unsupported OS"),
-        };
+    fn osDir(this: *@This()) []const u8 {
+        return if (this.os) |os|
+            os
+        else
+            comptime switch (std.builtin.os.tag) {
+                .linux => "linux",
+                .macos => "osx",
+                .solaris => "sunos",
+                .windows => "windows",
+                else => @compileError("Unsupported OS"),
+            };
     }
 
     fn pagesDir(this: *@This(), allocator: *Allocator) ![]const u8 {

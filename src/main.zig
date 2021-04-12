@@ -9,6 +9,7 @@ const GeneralPurposeAllocator = std.heap.GeneralPurposeAllocator;
 const params = comptime [_]clap.Param(clap.Help){
     clap.parseParam("-h, --help        Display this help and exit") catch unreachable,
     clap.parseParam("-l, --lang <STR>  TLDR page language") catch unreachable,
+    clap.parseParam("-o, --os   <STR>  Operating system target") catch unreachable,
     clap.parseParam("-f, --fetch       Fetch fresh TLDR pages") catch unreachable,
     clap.parseParam("<POS>...") catch unreachable,
 };
@@ -48,8 +49,9 @@ pub fn main() anyerror!void {
 
     if (positionals) |pos| {
         const lang = args.option("--lang");
+        const os = args.option("--os");
 
-        var tldr_pages = Pages.open(lang) catch |err| errorExit(err, fetched);
+        var tldr_pages = Pages.open(lang, os) catch |err| errorExit(err, fetched);
         defer tldr_pages.close();
 
         const page_contents = tldr_pages.pageContents(allocator, pos) catch |err| errorExit(err, fetched);

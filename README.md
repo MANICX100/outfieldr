@@ -65,7 +65,7 @@ is [here](bench/hyperfine-outfieldr-tealdeer-ip).
 
 - [X] Make language overridable
 
-- [ ] Make OS overridable
+- [X] Make OS overridable
 
 - [ ] Handle terminals that don't like color
 
