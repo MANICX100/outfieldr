@@ -117,6 +117,7 @@ pub fn prettify(allocator: *Allocator, contents: []const u8, out: File) !void {
         _ = try l.prettyPrint(buffered_stream.writer());
     }
     _ = try buffered_stream.write(Color.reset());
+    _ = try buffered_stream.write("\n");
 
     try buffered_stream.flush();
 }
