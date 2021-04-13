@@ -2,6 +2,7 @@ const std = @import("std");
 const color = @import("color.zig");
 
 const Allocator = std.mem.Allocator;
+const File = std.fs.File;
 const Color = color.Color;
 
 const PrettyLine = struct {
@@ -100,40 +101,10 @@ const PrettyLine = struct {
             .Other => 0,
         };
     }
-
-    fn argSize(this: *const @This()) usize {
-        var count: usize = 0;
-        var i: usize = 1;
-        while (i < this.contents.len) : (i += 1) {
-            const curr = this.contents[i];
-            const prev = this.contents[i - 1];
-
-            if (curr == '{' and prev == '{') count += 1;
-        }
-        return count * (Type.Arg.colorCode().len + this.line_type.colorCode().len);
-    }
-
-    fn lineSize(this: *const @This()) usize {
-        return sumArray(usize, &[_]usize{
-            this.contents.len,
-            this.line_type.colorCode().len,
-            this.indentWidth(),
-            this.argSize(),
-            "\n".len,
-        });
-    }
-
-    fn sumArray(comptime T: type, elems: []T) T {
-        var sum: T = 0;
-        for (elems) |e| {
-            sum += e;
-        }
-        return sum;
-    }
 };
 
 /// Add colors and indentation to the tldr page.
-pub fn prettify(allocator: *Allocator, contents: []const u8) ![]const u8 {
+pub fn prettify(allocator: *Allocator, contents: []const u8, out: File) !void {
     const line_slices = try lines(allocator, contents);
     defer allocator.free(line_slices);
 
@@ -141,17 +112,13 @@ pub fn prettify(allocator: *Allocator, contents: []const u8) ![]const u8 {
     const lines_rich = try PrettyLine.parseLines(allocator, line_slices[skip_lines..]);
     defer allocator.free(lines_rich);
 
-    const pretty: []u8 = try allocator.alloc(u8, prettySize(lines_rich));
-    var stream = std.io.fixedBufferStream(pretty);
-    var buffered_stream = std.io.bufferedWriter(stream.writer());
-
+    var buffered_stream = std.io.bufferedWriter(out.writer());
     for (lines_rich) |l| {
         _ = try l.prettyPrint(buffered_stream.writer());
     }
     _ = try buffered_stream.write(Color.reset());
 
     try buffered_stream.flush();
-    return stream.getWritten();
 }
 
 /// Split up the page by lines.
@@ -179,19 +146,6 @@ fn countLines(contents: []const u8) usize {
         if (c == '\n') count += 1;
     }
     return count;
-}
-
-/// We're adding terminal escapes and indentation into the tldr page
-/// contents, making it longer. Calculate the new size.
-fn prettySize(pretty_line: []const PrettyLine) usize {
-    var size: usize = 0;
-
-    for (pretty_line) |l| {
-        size += l.lineSize();
-    }
-    size += Color.reset().len;
-
-    return size;
 }
 
 test "countLines" {
