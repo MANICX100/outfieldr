@@ -29,5 +29,8 @@ pub fn downloadPagesArchive(allocator: *Allocator, fd: File, url: []const u8) !u
 
         try writer.writeAll(buf[0..read]);
     }
+
+    if (size == 0) return error.DownloadFailedZeroSize;
+
     return size;
 }

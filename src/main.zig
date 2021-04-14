@@ -45,7 +45,7 @@ pub fn main() anyerror!void {
     }
 
     if (fetch) {
-        try Pages.fetch(allocator);
+        Pages.fetch(allocator) catch |err| errorExit(err);
         if (positionals == null) std.process.exit(0);
         _ = try stdout.writer().write("--\n");
     }
@@ -66,6 +66,7 @@ pub fn main() anyerror!void {
 fn errorExit(e: anyerror) noreturn {
     const err = std.log.err;
     switch (e) {
+        error.DownloadFailedZeroSize => err("Fetching returned zero bytes", .{}),
         error.AppdataNotFound => err("Appdata directory not found. Rerun with `--fetch`.", .{}),
         error.RepoDirNotFound => err("TLDR pages cache not found. Rerun with `--fetch`.", .{}),
         error.LanguageNotSupported => err("Language '{s}' not supported.", .{lang.?}),
