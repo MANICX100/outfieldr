@@ -43,12 +43,14 @@ You'll need [Zig](https://ziglang.org/) and
 of Zig from master, as this is what it was developed with and what
 it's dependencies require.
 
-First, you need to fetch the packages used by this repo:
+The following command will fetch all the needed dependencies, generate
+the `deps.zig` file, and build with `zig`:
 ```
-gyro fetch
+gyro build
 ```
 
-Then build, adding whatever build flags you may want:
+This is only needed when building for the first time, or if changes
+are made to the dependencies. Subsequent builds can be run with:
 ```
 zig build
 ```
