@@ -22,8 +22,7 @@ pub fn main() anyerror!void {
     var diag: clap.Diagnostic = undefined;
     var args = clap.parse(clap.Help, &params, std.heap.page_allocator, &diag) catch |err| {
         diag.report(std.io.getStdErr().writer(), err) catch {};
-        try helpExit();
-        return err;
+        helpExit();
     };
     defer args.deinit();
 
@@ -41,7 +40,7 @@ pub fn main() anyerror!void {
     var allocator = &gpa.allocator;
 
     if (args.flag("--help")) {
-        try helpExit();
+        helpExit();
     }
 
     if (fetch) {
@@ -59,7 +58,7 @@ pub fn main() anyerror!void {
 
         try pretty.prettify(allocator, page_contents, stdout);
     } else {
-        try helpExit();
+        helpExit();
     }
 }
 
@@ -82,14 +81,14 @@ fn errorExit(e: anyerror) noreturn {
     std.process.exit(1);
 }
 
-fn helpExit() !void {
+fn helpExit() noreturn {
     const stderr = std.io.getStdErr().writer();
 
-    try stderr.print("Usage: {s} ", .{std.os.argv[0]});
-    try clap.usage(stderr, &params);
-    try stderr.print("\nFlags: \n", .{});
-    try clap.help(stderr, &params);
-    _ = try stderr.write(
+    stderr.print("Usage: {s} ", .{std.os.argv[0]}) catch unreachable;
+    clap.usage(stderr, &params) catch unreachable;
+    stderr.print("\nFlags: \n", .{}) catch unreachable;
+    clap.help(stderr, &params) catch unreachable;
+    _ = stderr.write(
         \\
         \\Examples:
         \\
@@ -106,6 +105,7 @@ fn helpExit() !void {
         \\ tldr --fetch chown
         \\
         \\
-    );
+    ) catch unreachable;
+
     std.process.exit(1);
 }
