@@ -63,21 +63,21 @@ pub fn main() anyerror!void {
     }
 }
 
-fn errorExit(err: anyerror) noreturn {
-    const stderr = std.io.getStdErr().writer();
-    _ = switch (err) {
-        error.AppdataNotFound => stderr.print("Appdata directory not found. Rerun with `--fetch`.\n", .{}),
-        error.RepoDirNotFound => stderr.print("TLDR pages cache not found. Rerun with `--fetch`.\n", .{}),
-        error.LanguageNotSupported => stderr.print("Language '{s}' not supported.\n", .{lang.?}),
-        error.OsNotSupported => stderr.print("Operating system '{s}' not supported.\n", .{os.?}),
-        error.PageNotFound => s: {
+fn errorExit(e: anyerror) noreturn {
+    const err = std.log.err;
+    switch (e) {
+        error.AppdataNotFound => err("Appdata directory not found. Rerun with `--fetch`.", .{}),
+        error.RepoDirNotFound => err("TLDR pages cache not found. Rerun with `--fetch`.", .{}),
+        error.LanguageNotSupported => err("Language '{s}' not supported.", .{lang.?}),
+        error.OsNotSupported => err("Operating system '{s}' not supported.", .{os.?}),
+        error.PageNotFound => {
             if (fetch)
-                break :s stderr.print("Page doesn't exist in tldr-master. Consider contributing it!\n", .{})
+                err("Page doesn't exist in tldr-master. Consider contributing it!", .{})
             else
-                break :s stderr.print("Page not found. Perhaps try with `--fetch`\n", .{});
+                err("Page not found. Perhaps try with `--fetch`", .{});
         },
         else => unreachable,
-    } catch unreachable;
+    }
     std.process.exit(1);
 }
 
