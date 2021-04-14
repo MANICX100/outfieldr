@@ -56,7 +56,7 @@ pub fn main() anyerror!void {
         const page_contents = tldr_pages.pageContents(allocator, pos) catch |err| errorExit(err);
         defer allocator.free(page_contents);
 
-        try pretty.prettify(allocator, page_contents, stdout);
+        try pretty.prettify(allocator, page_contents, stdout.writer());
     } else {
         helpExit();
     }

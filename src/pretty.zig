@@ -104,7 +104,7 @@ const PrettyLine = struct {
 };
 
 /// Add colors and indentation to the tldr page.
-pub fn prettify(allocator: *Allocator, contents: []const u8, out: File) !void {
+pub fn prettify(allocator: *Allocator, contents: []const u8, writer: anytype) !void {
     const line_slices = try lines(allocator, contents);
     defer allocator.free(line_slices);
 
@@ -112,7 +112,7 @@ pub fn prettify(allocator: *Allocator, contents: []const u8, out: File) !void {
     const lines_rich = try PrettyLine.parseLines(allocator, line_slices[skip_lines..]);
     defer allocator.free(lines_rich);
 
-    var buffered_stream = std.io.bufferedWriter(out.writer());
+    var buffered_stream = std.io.bufferedWriter(writer);
     for (lines_rich) |l| {
         _ = try l.prettyPrint(buffered_stream.writer());
     }
