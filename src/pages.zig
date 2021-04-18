@@ -16,7 +16,7 @@ pub const Pages = struct {
     os: ?[]const u8,
 
     pub fn fetch(allocator: *Allocator) !void {
-        var appdata = try appdataDir(true);
+        var appdata = try appdataDir(true, .{});
         const archive_fname = "master.tar.gz";
         var fd = try appdata.createFile(archive_fname, .{ .read = true });
         defer fd.close();
@@ -39,7 +39,7 @@ pub const Pages = struct {
 
     pub fn open(lang: ?[]const u8, os: ?[]const u8) !@This() {
         return @This(){
-            .appdata = try appdataDir(false),
+            .appdata = try appdataDir(false, .{}),
             .language = lang,
             .os = os,
         };
@@ -64,7 +64,7 @@ pub const Pages = struct {
     }
 
     fn openError(this: *@This(), allocator: *Allocator, command: []const []const u8) ![]const u8 {
-        const appdata_fd = appdataDir(false) catch return error.AppdataNotFound;
+        const appdata_fd = appdataDir(false, .{}) catch return error.AppdataNotFound;
         const repo_dir_fd = appdata_fd.openDir(repo_dir, .{}) catch return error.RepoDirNotFound;
 
         const pages_dir = try this.pagesDir(allocator);
@@ -148,18 +148,18 @@ pub const Pages = struct {
         return allocator.dupe(u8, pages_dir);
     }
 
-    fn appdataDir(create: bool) !Dir {
+    fn appdataDir(create: bool, options: Dir.OpenDirOptions) !Dir {
         var buf: [std.fs.MAX_PATH_BYTES]u8 = undefined;
         var fba = FixedBufferAllocator.init(&buf);
         const appdata_path = try std.fs.getAppDataDir(&fba.allocator, prog_name);
 
-        return std.fs.openDirAbsolute(appdata_path, .{}) catch |err| {
+        return std.fs.openDirAbsolute(appdata_path, options) catch |err| {
             const stderr = std.io.getStdErr();
             switch (err) {
                 error.FileNotFound => {
                     if (create) {
                         try std.fs.makeDirAbsolute(appdata_path);
-                        return std.fs.openDirAbsolute(appdata_path, .{});
+                        return std.fs.openDirAbsolute(appdata_path, options);
                     } else {
                         return error.AppdataNotFound;
                     }
