@@ -15,6 +15,18 @@ pub const Pages = struct {
     language: ?[]const u8,
     os: ?[]const u8,
 
+    pub fn open(lang: ?[]const u8, os: ?[]const u8) !@This() {
+        return @This(){
+            .appdata = try appdataDir(false, .{}),
+            .language = lang,
+            .os = os,
+        };
+    }
+
+    pub fn close(this: *@This()) void {
+        this.appdata.close();
+    }
+
     pub fn fetch(allocator: *Allocator) !void {
         var appdata = try appdataDir(true, .{});
         const archive_fname = "master.tar.gz";
@@ -35,18 +47,6 @@ pub const Pages = struct {
         try appdata.deleteFile(archive_fname);
 
         _ = try stdout.write("Pages successfully updated\n");
-    }
-
-    pub fn open(lang: ?[]const u8, os: ?[]const u8) !@This() {
-        return @This(){
-            .appdata = try appdataDir(false, .{}),
-            .language = lang,
-            .os = os,
-        };
-    }
-
-    pub fn close(this: *@This()) void {
-        this.appdata.close();
     }
 
     pub fn listLangs(writer: anytype) !void {
