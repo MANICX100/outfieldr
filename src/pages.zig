@@ -27,26 +27,24 @@ pub const Pages = struct {
         this.appdata.close();
     }
 
-    pub fn fetch(allocator: *Allocator) !void {
+    pub fn fetch(allocator: *Allocator, writer: anytype) !void {
         var appdata = try appdataDir(true, .{});
         const archive_fname = "master.tar.gz";
         var fd = try appdata.createFile(archive_fname, .{ .read = true });
         defer fd.close();
 
-        const stdout = std.io.getStdOut().writer();
-
         const url = "https://codeload.github.com/tldr-pages/tldr/tar.gz/master";
-        _ = try stdout.print("Fetching pages archive from {s}\n", .{url});
+        try writer.print("Fetching pages archive from {s}\n", .{url});
         const fetch_size = try net.downloadPagesArchive(allocator, fd, url);
-        _ = try stdout.print("Fetched '{s}' ({} bytes)\n", .{ archive_fname, fetch_size });
+        try writer.print("Fetched '{s}' ({} bytes)\n", .{ archive_fname, fetch_size });
 
-        _ = try stdout.print("Extracting {s}\n", .{archive_fname});
+        try writer.print("Extracting {s}\n", .{archive_fname});
         try archive.extractPages(allocator, appdata, fd);
 
-        _ = try stdout.print("Extracted! Deleting {s}\n", .{archive_fname});
+        try writer.print("Extracted! Deleting {s}\n", .{archive_fname});
         try appdata.deleteFile(archive_fname);
 
-        _ = try stdout.write("Pages successfully updated\n");
+        _ = try writer.write("Pages successfully updated\n");
     }
 
     pub fn listLangs(writer: anytype) !void {

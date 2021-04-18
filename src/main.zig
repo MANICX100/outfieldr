@@ -51,7 +51,7 @@ pub fn main() anyerror!void {
     }
 
     if (fetch) {
-        Pages.fetch(allocator) catch |err| errorExit(err);
+        Pages.fetch(allocator, stdout.writer()) catch |err| errorExit(err);
         if (positionals == null) std.process.exit(0);
         _ = try stdout.writer().write("--\n");
     }
