@@ -61,7 +61,8 @@ pub fn main() anyerror!void {
     }
 
     if (args.flag("--list-langs")) {
-        std.debug.print("TODO: list langs\n", .{});
+        try Pages.listLangs(stdout.writer());
+        if (positionals == null) std.process.exit(0);
     }
 
     if (args.flag("--list-os")) {

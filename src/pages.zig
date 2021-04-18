@@ -49,6 +49,24 @@ pub const Pages = struct {
         this.appdata.close();
     }
 
+    pub fn listLangs(writer: anytype) !void {
+        const appdata = try appdataDir(false, .{});
+        const tldr_master = try appdata.openDir("tldr-master", .{ .iterate = true });
+
+        var it = tldr_master.iterate();
+        while (it.next()) |entry_option| {
+            if (entry_option) |entry| {
+                const name = entry.name;
+                if (name.len > 6 and std.mem.eql(u8, name[0..6], "pages.")) {
+                    try writer.print("{s}\n", .{name[6..]});
+                }
+            } else {
+                break;
+            }
+        } else |_| unreachable;
+        try writer.print("en\n", .{});
+    }
+
     pub fn pageContents(this: *@This(), allocator: *Allocator, command: []const []const u8) ![]const u8 {
         var buf: [std.fs.MAX_PATH_BYTES * 2]u8 = undefined;
         var fba = FixedBufferAllocator.init(&buf);
