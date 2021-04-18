@@ -6,13 +6,20 @@ const pretty = @import("pretty.zig");
 const Pages = pages.Pages;
 const GeneralPurposeAllocator = std.heap.GeneralPurposeAllocator;
 
-const params = comptime [_]clap.Param(clap.Help){
-    clap.parseParam("-h, --help        Display this help and exit") catch unreachable,
-    clap.parseParam("-l, --lang <STR>  TLDR page language") catch unreachable,
-    clap.parseParam("-o, --os   <STR>  Operating system target") catch unreachable,
-    clap.parseParam("-f, --fetch       Fetch fresh TLDR pages") catch unreachable,
-    clap.parseParam("<POS>...") catch unreachable,
-};
+fn getParams() comptime [8]clap.Param(clap.Help) {
+    @setEvalBranchQuota(10_000);
+    return [_]clap.Param(clap.Help){
+        clap.parseParam("-h, --help        Display this help and exit") catch unreachable,
+        clap.parseParam("-l, --lang <STR>  TLDR page language") catch unreachable,
+        clap.parseParam("-o, --os   <STR>  Operating system target") catch unreachable,
+        clap.parseParam("-f, --fetch       Fetch fresh TLDR pages") catch unreachable,
+        clap.parseParam("-P, --list-pages  List all available pages with descriptons") catch unreachable,
+        clap.parseParam("-L, --list-langs  List all supported languages") catch unreachable,
+        clap.parseParam("-O, --list-os     List all supported operating systems") catch unreachable,
+        clap.parseParam("<POS>...") catch unreachable,
+    };
+}
+const params = comptime getParams();
 
 var fetch: bool = undefined;
 var lang: ?[]const u8 = undefined;
@@ -47,6 +54,18 @@ pub fn main() anyerror!void {
         Pages.fetch(allocator) catch |err| errorExit(err);
         if (positionals == null) std.process.exit(0);
         _ = try stdout.writer().write("--\n");
+    }
+
+    if (args.flag("--list-pages")) {
+        std.debug.print("TODO: list pages\n", .{});
+    }
+
+    if (args.flag("--list-langs")) {
+        std.debug.print("TODO: list langs\n", .{});
+    }
+
+    if (args.flag("--list-os")) {
+        std.debug.print("TODO: list os\n", .{});
     }
 
     if (positionals) |pos| {
