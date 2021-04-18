@@ -153,13 +153,13 @@ pub const Pages = struct {
         var fba = FixedBufferAllocator.init(&buf);
         const appdata_path = try std.fs.getAppDataDir(&fba.allocator, prog_name);
 
-        return std.fs.cwd().openDir(appdata_path, .{}) catch |err| {
+        return std.fs.openDirAbsolute(appdata_path, .{}) catch |err| {
             const stderr = std.io.getStdErr();
             switch (err) {
                 error.FileNotFound => {
                     if (create) {
-                        try std.fs.cwd().makeDir(appdata_path);
-                        return std.fs.cwd().openDir(appdata_path, .{});
+                        try std.fs.makeDirAbsolute(appdata_path);
+                        return std.fs.openDirAbsolute(appdata_path, .{});
                     } else {
                         return error.AppdataNotFound;
                     }
