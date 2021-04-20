@@ -3,6 +3,7 @@ const net = @import("net.zig");
 const archive = @import("archive.zig");
 
 const Allocator = std.mem.Allocator;
+const ArrayList = std.ArrayList;
 const FixedBufferAllocator = std.heap.FixedBufferAllocator;
 const Dir = std.fs.Dir;
 const File = std.fs.File;
@@ -47,22 +48,35 @@ pub const Pages = struct {
         _ = try writer.write("Pages successfully updated\n");
     }
 
-    pub fn listLangs(writer: anytype) !void {
-        const appdata = try appdataDir(false, .{});
-        const tldr_master = try appdata.openDir("tldr-master", .{ .iterate = true });
+    pub fn listLangs(this: *@This(), allocator: *Allocator, writer: anytype) !void {
+        var tldr_master = try this.appdata.openDir(repo_dir, .{ .iterate = true });
+        defer tldr_master.close();
+
+        var langs = ArrayList([]const u8).init(allocator);
+        defer langs.deinit();
+        defer for (langs.items) |l| allocator.free(l);
 
         var it = tldr_master.iterate();
         while (it.next()) |entry_option| {
             if (entry_option) |entry| {
                 const name = entry.name;
                 if (name.len > 6 and std.mem.eql(u8, name[0..6], "pages.")) {
-                    try writer.print("{s}\n", .{name[6..]});
+                    try langs.append(try allocator.dupe(u8, name[6..]));
                 }
             } else {
                 break;
             }
         } else |_| unreachable;
-        try writer.print("en\n", .{});
+
+        // English dir is just named "pages", so we manually add it.
+        try langs.append(try allocator.dupe(u8, "en"));
+
+        std.sort.sort([]const u8, langs.items, u8, std.mem.lessThan);
+
+        for (langs.items) |l| {
+            try writer.print("{s}\n", .{l});
+        }
+    }
     }
 
     pub fn pageContents(this: *@This(), allocator: *Allocator, command: []const []const u8) ![]const u8 {

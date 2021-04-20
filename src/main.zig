@@ -56,12 +56,15 @@ pub fn main() anyerror!void {
         _ = try stdout.writer().write("--\n");
     }
 
+    var tldr_pages = Pages.open(lang, os) catch |err| errorExit(err);
+    defer tldr_pages.close();
+
     if (args.flag("--list-pages")) {
         std.debug.print("TODO: list pages\n", .{});
     }
 
     if (args.flag("--list-langs")) {
-        try Pages.listLangs(stdout.writer());
+        try tldr_pages.listLangs(allocator, stdout.writer());
         if (positionals == null) std.process.exit(0);
     }
 
@@ -70,9 +73,6 @@ pub fn main() anyerror!void {
     }
 
     if (positionals) |pos| {
-        var tldr_pages = Pages.open(lang, os) catch |err| errorExit(err);
-        defer tldr_pages.close();
-
         const page_contents = tldr_pages.pageContents(allocator, pos) catch |err| errorExit(err);
         defer allocator.free(page_contents);
 
