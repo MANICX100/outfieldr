@@ -49,14 +49,14 @@ pub const Pages = struct {
     }
 
     pub fn listLangs(this: *@This(), allocator: *Allocator, writer: anytype) !void {
-        var tldr_master = try this.appdata.openDir(repo_dir, .{ .iterate = true });
-        defer tldr_master.close();
+        var repo_dir_fd = try this.appdata.openDir(repo_dir, .{ .iterate = true });
+        defer repo_dir_fd.close();
 
         var langs = ArrayList([]const u8).init(allocator);
         defer langs.deinit();
         defer for (langs.items) |l| allocator.free(l);
 
-        var it = tldr_master.iterate();
+        var it = repo_dir_fd.iterate();
         while (it.next()) |entry_option| {
             if (entry_option) |entry| {
                 const name = entry.name;
@@ -77,6 +77,40 @@ pub const Pages = struct {
             try writer.print("{s}\n", .{l});
         }
     }
+
+    pub fn listOs(this: *@This(), allocator: *Allocator, writer: anytype) !void {
+        var pages_fd = fd: {
+            const pages_dirname = try this.pagesDir(allocator);
+            defer allocator.free(pages_dirname);
+
+            const pages_path = try std.fs.path.join(allocator, &.{ repo_dir, pages_dirname });
+            defer allocator.free(pages_path);
+
+            break :fd try this.appdata.openDir(pages_path, .{ .iterate = true });
+        };
+        defer pages_fd.close();
+
+        var os_list = ArrayList([]const u8).init(allocator);
+        defer os_list.deinit();
+        defer for (os_list.items) |o| allocator.free(o);
+
+        var it = pages_fd.iterate();
+        while (it.next()) |entry_option| {
+            if (entry_option) |entry| {
+                const name = entry.name;
+                if (!std.mem.eql(u8, name, "common")) {
+                    try os_list.append(try allocator.dupe(u8, name));
+                }
+            } else {
+                break;
+            }
+        } else |_| unreachable;
+
+        std.sort.sort([]const u8, os_list.items, u8, std.mem.lessThan);
+
+        for (os_list.items) |o| {
+            try writer.print("{s}\n", .{o});
+        }
     }
 
     pub fn pageContents(this: *@This(), allocator: *Allocator, command: []const []const u8) ![]const u8 {

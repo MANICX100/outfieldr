@@ -70,7 +70,8 @@ pub fn main() anyerror!void {
     }
 
     if (args.flag("--list-os")) {
-        std.debug.print("TODO: list os\n", .{});
+        try tldr_pages.listOs(allocator, stdout.writer());
+        if (positionals == null) std.process.exit(0);
     }
 
     if (positionals) |pos| {
