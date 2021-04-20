@@ -122,6 +122,20 @@ pub fn prettify(allocator: *Allocator, contents: []const u8, writer: anytype) !v
     try buffered_stream.flush();
 }
 
+pub fn prettifyPagesList(pages_list: anytype, writer: anytype) !void {
+    for (pages_list.items) |entry| {
+        try writer.print("{s}{s}{s} // {s}{s}{s}\n", .{
+            PrettyLine.Type.Cmd.colorCode(),
+            entry.name,
+            Color.Black.code(),
+
+            PrettyLine.Type.Desc.colorCode(),
+            entry.desc,
+            Color.reset(),
+        });
+    }
+}
+
 /// Split up the page by lines.
 fn lines(allocator: *Allocator, contents: []const u8) ![]const []const u8 {
     const line_slices = try allocator.alloc([]const u8, countLines(contents));

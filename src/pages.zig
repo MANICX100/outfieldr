@@ -1,4 +1,5 @@
 const std = @import("std");
+const pretty = @import("pretty.zig");
 const net = @import("net.zig");
 const archive = @import("archive.zig");
 
@@ -111,6 +112,63 @@ pub const Pages = struct {
         for (os_list.items) |o| {
             try writer.print("{s}\n", .{o});
         }
+    }
+
+    const PageInfo = struct {
+        name: []const u8,
+        desc: []const u8,
+    };
+
+    pub fn listPages(this: *@This(), allocator: *Allocator, writer: anytype) !void {
+        var pages_info = ArrayList(PageInfo).init(allocator);
+        defer pages_info.deinit();
+        defer for (pages_info.items) |item| {
+            allocator.free(item.name);
+            allocator.free(item.desc);
+        };
+
+        var buf: [std.fs.MAX_PATH_BYTES * 2]u8 = undefined;
+        var fba = FixedBufferAllocator.init(&buf);
+        const page_paths = try this.pagePaths(&fba.allocator, allocator, &.{""});
+
+        for (page_paths) |path| {
+            const pages_dir_path = std.fs.path.dirname(path) orelse unreachable;
+            const pages_dir_fd = try this.appdata.openDir(pages_dir_path, .{ .iterate = true });
+
+            var it = pages_dir_fd.iterate();
+            while (it.next() catch unreachable) |entry| {
+                const filename = entry.name;
+                var fd = try pages_dir_fd.openFile(filename, .{});
+                defer fd.close();
+
+                try pages_info.append(.{
+                    .name = try allocator.dupe(u8, filename[0 .. filename.len - ".md".len]),
+                    .desc = try pageDescription(allocator, fd),
+                });
+            }
+        }
+
+        std.sort.sort(PageInfo, pages_info.items, u8, sortPageInfo);
+
+        try pretty.prettifyPagesList(pages_info, writer);
+    }
+
+    fn sortPageInfo(comptime context: type, lhs: PageInfo, rhs: PageInfo) bool {
+        return std.mem.lessThan(u8, lhs.name, rhs.name);
+    }
+
+    fn pageDescription(allocator: *Allocator, fd: File) ![]const u8 {
+        const reader = std.io.bufferedReader(fd.reader()).reader();
+
+        var skip_lines: usize = 2;
+        while (skip_lines > 0) : (skip_lines -= 1) try reader.skipUntilDelimiterOrEof('\n');
+
+        var desc_buf = try allocator.alloc(u8, 512);
+        defer allocator.free(desc_buf);
+        const desc_line = try reader.readUntilDelimiterOrEof(desc_buf, '\n');
+        const desc = desc_line.?["> ".len..];
+
+        return allocator.dupe(u8, desc);
     }
 
     pub fn pageContents(this: *@This(), allocator: *Allocator, command: []const []const u8) ![]const u8 {

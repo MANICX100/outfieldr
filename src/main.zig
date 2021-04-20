@@ -61,7 +61,8 @@ pub fn main() anyerror!void {
     defer tldr_pages.close();
 
     if (args.flag("--list-pages")) {
-        std.debug.print("TODO: list pages\n", .{});
+        try tldr_pages.listPages(allocator, stdout.writer());
+        if (positionals == null) std.process.exit(0);
     }
 
     if (args.flag("--list-langs")) {
