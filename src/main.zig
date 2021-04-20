@@ -44,6 +44,7 @@ pub fn main() anyerror!void {
 
     const stdout = std.io.getStdOut();
     var gpa = GeneralPurposeAllocator(.{}){};
+    defer std.debug.assert(!gpa.deinit());
     var allocator = &gpa.allocator;
 
     if (args.flag("--help")) {
