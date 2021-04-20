@@ -31,6 +31,18 @@ You can specify the platform too, it defaults to the platform the source was bui
 tldr --os osx caffeinate
 ```
 
+You can list all pages, as well as supported languages and operating systems:
+```
+tldr --list-pages
+tldr --list-langs
+tldr --list-os
+```
+
+Specifying your language/os works with `list-pages` works as expected.
+```
+tldr --lang fr --os linux --list-pages
+```
+
 For more, try:
 ```
 tldr --help
