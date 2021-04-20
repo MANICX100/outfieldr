@@ -81,13 +81,13 @@ is [here](bench/hyperfine-outfieldr-tealdeer-ip).
 
 - [X] Improve help page
 
+- [X] List all available languages
+
+- [X] List all supported operating systems
+
+- [X] List all available pages with small description
+
 - [ ] Handle terminals that don't like color
-
-- [ ] List all available pages with small description
-
-- [ ] List all available languages
-
-- [ ] Maybe add a config file for whatever
 
 # Why the name?
 
