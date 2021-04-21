@@ -62,17 +62,17 @@ pub fn main() anyerror!void {
 
     if (args.flag("--list-pages")) {
         try tldr_pages.listPages(allocator, stdout.writer());
-        if (positionals == null) std.process.exit(0);
+        std.process.exit(0);
     }
 
     if (args.flag("--list-langs")) {
         try tldr_pages.listLangs(allocator, stdout.writer());
-        if (positionals == null) std.process.exit(0);
+        std.process.exit(0);
     }
 
     if (args.flag("--list-os")) {
         try tldr_pages.listOs(allocator, stdout.writer());
-        if (positionals == null) std.process.exit(0);
+        std.process.exit(0);
     }
 
     if (positionals) |pos| {
