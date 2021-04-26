@@ -38,7 +38,7 @@ tldr --list-langs
 tldr --list-os
 ```
 
-Specifying your language/os works with `list-pages` works as expected.
+Specifying your language/os alongside `list-pages` works as expected.
 ```
 tldr --lang fr --os linux --list-pages
 ```
