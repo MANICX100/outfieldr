@@ -58,14 +58,19 @@ it's dependencies require.
 The following command will fetch all the needed dependencies, generate
 the `deps.zig` file, and build with `zig`:
 ```
-gyro build
+gyro build -Drelease-safe
 ```
 
 This is only needed when building for the first time, or if changes
 are made to the dependencies. Subsequent builds can be run with:
 ```
-zig build
+zig build -Drelease-safe
 ```
+
+I recommend you build with `-Drelease-safe`. The performance penalty
+for runtime safety is quite minimal. If you want the most speed, by
+disabling all runtime safety checks, build with `-Drelease-fast`
+instead.
 
 # Performance
 
