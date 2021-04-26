@@ -50,27 +50,24 @@ tldr --help
 
 # Building
 
-You'll need [Zig](https://ziglang.org/) and
-[Gyro](https://github.com/mattnite/gyro). You'll likely need a version
-of Zig from master, as this is what it was developed with and what
-it's dependencies require.
+You'll need [`zig-0.8.0-dev`](https://ziglang.org/download/) and Git.
 
-The following command will fetch all the needed dependencies, generate
-the `deps.zig` file, and build with `zig`:
+First, you need to init and update the submoduled dependencies:
 ```
-gyro build -Drelease-safe
+git submodule init
+git submodule update
 ```
 
-This is only needed when building for the first time, or if changes
-are made to the dependencies. Subsequent builds can be run with:
+Then, you can build the project. To build a release-safe binary, run:
 ```
 zig build -Drelease-safe
 ```
 
 I recommend you build with `-Drelease-safe`. The performance penalty
-for runtime safety is quite minimal. If you want the most speed, by
-disabling all runtime safety checks, build with `-Drelease-fast`
-instead.
+for runtime safety is quite minimal. If you _gotta go fast_ and want
+to disable all runtime safety checks for the most speed possible,
+build with `-Drelease-fast` instead. But again, this is not
+recommended.
 
 # Performance
 
