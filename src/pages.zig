@@ -54,8 +54,10 @@ pub const Pages = struct {
         defer repo_dir_fd.close();
 
         var langs = ArrayList([]const u8).init(allocator);
-        defer langs.deinit();
-        defer for (langs.items) |l| allocator.free(l);
+        defer {
+            for (langs.items) |l| allocator.free(l);
+            langs.deinit();
+        }
 
         var it = repo_dir_fd.iterate();
         while (it.next()) |entry_option| {
@@ -92,8 +94,10 @@ pub const Pages = struct {
         defer pages_fd.close();
 
         var os_list = ArrayList([]const u8).init(allocator);
-        defer os_list.deinit();
-        defer for (os_list.items) |o| allocator.free(o);
+        defer {
+            for (os_list.items) |o| allocator.free(o);
+            os_list.deinit();
+        }
 
         var it = pages_fd.iterate();
         while (it.next()) |entry_option| {
@@ -121,11 +125,13 @@ pub const Pages = struct {
 
     pub fn listPages(this: *@This(), allocator: *Allocator, writer: anytype) !void {
         var pages_info = ArrayList(PageInfo).init(allocator);
-        defer pages_info.deinit();
-        defer for (pages_info.items) |item| {
-            allocator.free(item.name);
-            allocator.free(item.desc);
-        };
+        defer {
+            for (pages_info.items) |item| {
+                allocator.free(item.name);
+                allocator.free(item.desc);
+            }
+            pages_info.deinit();
+        }
 
         var buf: [std.fs.MAX_PATH_BYTES * 2]u8 = undefined;
         var fba = FixedBufferAllocator.init(&buf);
