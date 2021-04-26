@@ -1,4 +1,0 @@
-deps:
-  mattnite/tar: ^0.0.1
-  mattnite/clap: ^0.4.0
-  truemedian/zfetch: ^0.0.3
