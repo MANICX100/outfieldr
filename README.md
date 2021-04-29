@@ -74,17 +74,74 @@ recommended.
 
 # Performance
 
-It runs ~20-30 times faster than
-[Tealdeer](https://github.com/dbrgn/tealdeer), which is written in
-Rust and claims to be faster than the rest. For this, Tealdeer was
-built with `--release`, and Outfieldr was built with `-Drelease-fast`.
-It's worth noting that building with `-Drelease-safe` will give very
-similar results, only adding 0.1ms extra here or there.
+This is the fastest tldr client that I am aware of. It runs ~30 times
+faster than [Tealdeer](https://github.com/dbrgn/tealdeer/). If someone
+knows of a faster client, please open an issue with a link to the
+repository and I will update this section.
 
-It was bench-marked with hyperfine, nothing super scientific.
-Especially since Outfieldr is sitting at the lower bound of what
-hyperfine is able to measure. A comparision of viewing the `ip` page
-is [here](bench/hyperfine-outfieldr-tealdeer-ip).
+I benchmarked against a few other tldr programs using
+[Hyperfine](https://github.com/sharkdp/hyperfine), including Tealdeer,
+the C client, and the official Node.js client. These results were
+consistent on my machine, however they are probably inaccurate due to
+Outfieldr sitting on the lower bound of what Hyperfine is capable of
+measuring.
+
+Here are the results:
+
+| Program                                                          | Build Flags        | Mean Time (ms) | User (ms) | System (ms) |
+|:-----------------------------------------------------------------|:-------------------|:---------------|:----------|:------------|
+| [Outfieldr](https://gitlab.com/ve-nt/outfieldr)                  | `-Drelease-fast`   | 0.1 ± 0.0      | 0.4       | 0.3         |
+| [Tealdeer](https://github.com/dbrgn/tealdeer/)                   | `--release`        | 3.2 ± 0.2      | 2.1       | 1.6         |
+| [C Client](https://github.com/tldr-pages/tldr-c-client)          | `-O3`              | 3.6 ± 0.5      | 2.4       | 1.8         |
+| [Bash Client](https://github.com/pepa65/tldr-bash-client)        | N/A                | 15.0 ± 1.6     | 13.2      | 3.9         |
+| [Go Client](https://github.com/k3mist/tldr/)                     | Prebuilt from repo | 92.6 ± 1.2     | 87.5      | 5.0         |
+| [Node.js Client](https://github.com/tldr-pages/tldr-node-client) | N/A                | 471.0 ± 5.6    | 480.1     | 49.3        |
+
+Here is the raw log from Hyperfine:
+
+```
+Benchmark #1: ./bin/bash_client ip
+  Time (mean ± σ):      15.0 ms ±   1.6 ms    [User: 13.2 ms, System: 3.9 ms]
+  Range (min … max):    13.4 ms …  19.5 ms    183 runs
+
+Benchmark #2: ./bin/c_client ip
+  Time (mean ± σ):       3.6 ms ±   0.5 ms    [User: 2.4 ms, System: 1.8 ms]
+  Range (min … max):     3.2 ms …   6.0 ms    493 runs
+
+Benchmark #3: ./bin/go_client ip
+  Time (mean ± σ):      92.6 ms ±   1.2 ms    [User: 87.5 ms, System: 5.0 ms]
+  Range (min … max):    91.8 ms …  96.9 ms    31 runs
+
+Benchmark #4: ./bin/outfieldr ip
+  Time (mean ± σ):       0.1 ms ±   0.0 ms    [User: 0.4 ms, System: 0.3 ms]
+  Range (min … max):     0.0 ms …   0.6 ms    1094 runs
+
+Benchmark #5: ./bin/tealdeer ip
+  Time (mean ± σ):       3.2 ms ±   0.2 ms    [User: 2.1 ms, System: 1.6 ms]
+  Range (min … max):     3.0 ms …   5.4 ms    522 runs
+
+Benchmark #6: ./bin/node_modules/tldr/bin/tldr ip
+  Time (mean ± σ):     471.0 ms ±   5.6 ms    [User: 480.1 ms, System: 49.3 ms]
+  Range (min … max):   465.9 ms … 481.8 ms    10 runs
+
+Summary
+  './bin/outfieldr ip' ran
+   34.06 ± 15.16 times faster than './bin/tealdeer ip'
+   38.35 ± 17.62 times faster than './bin/c_client ip'
+  160.36 ± 72.35 times faster than './bin/bash_client ip'
+  987.72 ± 433.12 times faster than './bin/go_client ip'
+ 5021.80 ± 2201.98 times faster than './bin/node_modules/tldr/bin/tldr ip'
+```
+
+As you can see, Outfieldr is the clear winner here, being an order of
+magnitude faster than second place. It's worth noting that the
+[Node.js Client](https://github.com/tldr-pages/tldr-node-client) is
+the slowest by far, taking almost half a second to show you a tldr
+page.
+
+Before anyone asks, yes I did do a test run of every client viewing
+the `ip` page before benchmarking, and so no fetching/caching of the
+pages were performed during the benchmarks.
 
 # TODO
 
