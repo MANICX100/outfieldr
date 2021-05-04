@@ -60,16 +60,12 @@ pub const Pages = struct {
         }
 
         var it = repo_dir_fd.iterate();
-        while (it.next()) |entry_option| {
-            if (entry_option) |entry| {
-                const name = entry.name;
-                if (name.len > 6 and std.mem.eql(u8, name[0..6], "pages.")) {
-                    try langs.append(try allocator.dupe(u8, name[6..]));
-                }
-            } else {
-                break;
+        while (try it.next()) |entry| {
+            const name = entry.name;
+            if (name.len > 6 and std.mem.eql(u8, name[0..6], "pages.")) {
+                try langs.append(try allocator.dupe(u8, name[6..]));
             }
-        } else |_| unreachable;
+        }
 
         // English dir is just named "pages", so we manually add it.
         try langs.append(try allocator.dupe(u8, "en"));
@@ -100,16 +96,12 @@ pub const Pages = struct {
         }
 
         var it = pages_fd.iterate();
-        while (it.next()) |entry_option| {
-            if (entry_option) |entry| {
-                const name = entry.name;
-                if (!std.mem.eql(u8, name, "common")) {
-                    try os_list.append(try allocator.dupe(u8, name));
-                }
-            } else {
-                break;
+        while (try it.next()) |entry| {
+            const name = entry.name;
+            if (!std.mem.eql(u8, name, "common")) {
+                try os_list.append(try allocator.dupe(u8, name));
             }
-        } else |_| unreachable;
+        }
 
         std.sort.sort([]const u8, os_list.items, u8, std.mem.lessThan);
 
@@ -142,7 +134,7 @@ pub const Pages = struct {
             const pages_dir_fd = try this.appdata.openDir(pages_dir_path, .{ .iterate = true });
 
             var it = pages_dir_fd.iterate();
-            while (it.next() catch unreachable) |entry| {
+            while (try it.next()) |entry| {
                 const filename = entry.name;
                 var fd = try pages_dir_fd.openFile(filename, .{});
                 defer fd.close();
