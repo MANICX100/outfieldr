@@ -240,9 +240,10 @@ pub const Pages = struct {
     }
 
     fn pageFilename(allocator: *Allocator, command: []const []const u8) ![]const u8 {
-        const basename = try std.mem.join(allocator, "-", command);
-        defer allocator.free(basename);
-        return std.mem.concat(allocator, u8, &[_][]const u8{ basename, ".md" });
+        var path_buf: [std.fs.MAX_PATH_BYTES]u8 = undefined;
+        var fba = FixedBufferAllocator.init(&path_buf);
+        const basename = try std.mem.join(&fba.allocator, "-", command);
+        return std.mem.concat(allocator, u8, &.{ basename, ".md" });
     }
 
     fn osDir(this: *@This()) []const u8 {
