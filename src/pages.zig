@@ -113,6 +113,10 @@ pub const Pages = struct {
     const PageInfo = struct {
         name: []const u8,
         desc: []const u8,
+
+        fn sortPageInfo(comptime context: type, lhs: PageInfo, rhs: PageInfo) bool {
+            return std.mem.lessThan(u8, lhs.name, rhs.name);
+        }
     };
 
     pub fn listPages(this: *@This(), allocator: *Allocator, writer: anytype) !void {
@@ -146,13 +150,9 @@ pub const Pages = struct {
             }
         }
 
-        std.sort.sort(PageInfo, pages_info.items, u8, sortPageInfo);
+        std.sort.sort(PageInfo, pages_info.items, u8, PageInfo.sortPageInfo);
 
         try pretty.prettifyPagesList(pages_info, writer);
-    }
-
-    fn sortPageInfo(comptime context: type, lhs: PageInfo, rhs: PageInfo) bool {
-        return std.mem.lessThan(u8, lhs.name, rhs.name);
     }
 
     fn pageDescription(allocator: *Allocator, fd: File) ![]const u8 {
