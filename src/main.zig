@@ -52,12 +52,12 @@ pub fn main() anyerror!void {
     }
 
     if (fetch) {
-        Pages.fetch(allocator, stdout.writer()) catch |err| errorExit(err);
+        Pages.fetch(allocator, stdout.writer()) catch |err| return errorExit(err);
         if (positionals == null) std.process.exit(0);
         _ = try stdout.writer().write("--\n");
     }
 
-    var tldr_pages = Pages.open(lang, os) catch |err| errorExit(err);
+    var tldr_pages = Pages.open(lang, os) catch |err| return errorExit(err);
     defer tldr_pages.close();
 
     if (args.flag("--list-pages")) {
@@ -76,7 +76,7 @@ pub fn main() anyerror!void {
     }
 
     if (positionals) |pos| {
-        const page_contents = tldr_pages.pageContents(allocator, pos) catch |err| errorExit(err);
+        const page_contents = tldr_pages.pageContents(allocator, pos) catch |err| return errorExit(err);
         defer allocator.free(page_contents);
 
         try pretty.prettify(allocator, page_contents, stdout.writer());
@@ -85,7 +85,7 @@ pub fn main() anyerror!void {
     }
 }
 
-fn errorExit(e: anyerror) noreturn {
+fn errorExit(e: anyerror) !void {
     const err = std.log.err;
     switch (e) {
         error.DownloadFailedZeroSize => err("Fetching returned zero bytes", .{}),
@@ -99,7 +99,10 @@ fn errorExit(e: anyerror) noreturn {
             else
                 err("Page not found. Perhaps try with `--fetch`", .{});
         },
-        else => unreachable,
+        else => {
+            err("Unknown error '{s}'", .{@errorName(e)});
+            return e;
+        },
     }
     std.process.exit(1);
 }
