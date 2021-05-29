@@ -99,6 +99,15 @@ fn errorExit(e: anyerror) !void {
             else
                 err("Page not found. Perhaps try with `--fetch`", .{});
         },
+        error.HostLacksNetworkAddresses,
+        error.TemporaryNameServerFailure,
+        error.NameServerFailure,
+        error.AddressFamilyNotSupported,
+        error.UnknownHostName,
+        error.ServiceUnavailable,
+        error.NotConnected,
+        error.AddressInUse,
+        => err("Network error '{s}'", .{@errorName(e)}),
         else => {
             err("Unknown error '{s}'", .{@errorName(e)});
             return e;
