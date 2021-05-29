@@ -42,7 +42,7 @@ pub fn main() anyerror!void {
         break :pos if (pos.len > 0) pos else null;
     };
 
-    const stdout = std.io.getStdOut();
+    const stdout = std.io.getStdOut().writer();
     var gpa = GeneralPurposeAllocator(.{}){};
     defer std.debug.assert(!gpa.deinit());
     var allocator = &gpa.allocator;
@@ -52,26 +52,26 @@ pub fn main() anyerror!void {
     }
 
     if (fetch) {
-        Pages.fetch(allocator, stdout.writer()) catch |err| return errorExit(err);
+        Pages.fetch(allocator, stdout) catch |err| return errorExit(err);
         if (positionals == null) std.process.exit(0);
-        _ = try stdout.writer().write("--\n");
+        _ = try stdout.write("--\n");
     }
 
     var tldr_pages = Pages.open(lang, os) catch |err| return errorExit(err);
     defer tldr_pages.close();
 
     if (args.flag("--list-pages")) {
-        try tldr_pages.listPages(allocator, stdout.writer());
+        try tldr_pages.listPages(allocator, stdout);
         std.process.exit(0);
     }
 
     if (args.flag("--list-langs")) {
-        try tldr_pages.listLangs(allocator, stdout.writer());
+        try tldr_pages.listLangs(allocator, stdout);
         std.process.exit(0);
     }
 
     if (args.flag("--list-os")) {
-        try tldr_pages.listOs(allocator, stdout.writer());
+        try tldr_pages.listOs(allocator, stdout);
         std.process.exit(0);
     }
 
@@ -79,7 +79,7 @@ pub fn main() anyerror!void {
         const page_contents = tldr_pages.pageContents(allocator, pos) catch |err| return errorExit(err);
         defer allocator.free(page_contents);
 
-        try pretty.prettify(allocator, page_contents, stdout.writer());
+        try pretty.prettify(allocator, page_contents, stdout);
     } else {
         helpExit();
     }
