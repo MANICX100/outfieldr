@@ -107,6 +107,7 @@ fn errorExit(e: anyerror) !void {
         error.ServiceUnavailable,
         error.NotConnected,
         error.AddressInUse,
+        error.NetworkStreamTooLong,
         => err("Network error '{s}'", .{@errorName(e)}),
         else => {
             err("Unknown error '{s}'", .{@errorName(e)});
