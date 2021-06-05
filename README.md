@@ -16,10 +16,9 @@ Works with multiple-word pages as well, for example:
 tldr git rebase
 ```
 
-Fetch the most recent pages and update your local cache (you'll need
-to do this before using it for the first time):
+Update your local cache (you'll need to do this before using it for the first time):
 ```
-tldr --fetch
+tldr --update
 ```
 
 To specify language (in this case, español):
@@ -30,20 +29,20 @@ tldr --lang es bash
 You can specify the platform too, it defaults to the platform the
 source was built for.
 ```
-tldr --os osx caffeinate
+tldr --platform osx caffeinate
 ```
 
 You can list all pages, as well as supported languages and operating
 systems:
 ```
-tldr --list-pages
+tldr --list
 tldr --list-langs
-tldr --list-os
+tldr --list-platforms
 ```
 
-Specifying your language/os alongside `list-pages` works as expected.
+Specifying your language/platform alongside `list-pages` works as expected.
 ```
-tldr --lang fr --os linux --list-pages
+tldr --lang fr --platform linux --list-pages
 ```
 
 For more, try:

@@ -9,21 +9,21 @@ const GeneralPurposeAllocator = std.heap.GeneralPurposeAllocator;
 fn getParams() comptime [8]clap.Param(clap.Help) {
     @setEvalBranchQuota(10_000);
     return [_]clap.Param(clap.Help){
-        clap.parseParam("-h, --help        Display this help and exit") catch unreachable,
-        clap.parseParam("-l, --lang <STR>  TLDR page language") catch unreachable,
-        clap.parseParam("-o, --os   <STR>  Operating system target") catch unreachable,
-        clap.parseParam("-f, --fetch       Fetch fresh TLDR pages") catch unreachable,
-        clap.parseParam("-P, --list-pages  List all available pages with descriptons") catch unreachable,
-        clap.parseParam("-L, --list-langs  List all supported languages") catch unreachable,
-        clap.parseParam("-O, --list-os     List all supported operating systems") catch unreachable,
+        clap.parseParam("-h, --help            Display this help and exit") catch unreachable,
+        clap.parseParam("-L, --lang <STR>      Page language") catch unreachable,
+        clap.parseParam("-p, --platform <STR>  Platform target") catch unreachable,
+        clap.parseParam("-u, --update          Update local TLDR pages cache") catch unreachable,
+        clap.parseParam("-l, --list            List all available pages with descriptons") catch unreachable,
+        clap.parseParam("--list-langs          List all supported languages") catch unreachable,
+        clap.parseParam("--list-platforms      List all supported operating systems") catch unreachable,
         clap.parseParam("<POS>...") catch unreachable,
     };
 }
 const params = comptime getParams();
 
-var fetch: bool = undefined;
+var update: bool = undefined;
 var lang: ?[]const u8 = undefined;
-var os: ?[]const u8 = undefined;
+var platform: ?[]const u8 = undefined;
 
 pub fn main() anyerror!void {
     var diag: clap.Diagnostic = undefined;
@@ -33,9 +33,9 @@ pub fn main() anyerror!void {
     };
     defer args.deinit();
 
-    fetch = args.flag("--fetch");
+    update = args.flag("--update");
     lang = args.option("--lang");
-    os = args.option("--os");
+    platform = args.option("--platform");
 
     const positionals: ?[]const []const u8 = pos: {
         const pos = args.positionals();
@@ -51,16 +51,16 @@ pub fn main() anyerror!void {
         helpExit();
     }
 
-    if (fetch) {
-        Pages.fetch(allocator, stdout) catch |err| return errorExit(err);
+    if (update) {
+        Pages.update(allocator, stdout) catch |err| return errorExit(err);
         if (positionals == null) std.process.exit(0);
         _ = try stdout.write("--\n");
     }
 
-    var tldr_pages = Pages.open(lang, os) catch |err| return errorExit(err);
+    var tldr_pages = Pages.open(lang, platform) catch |err| return errorExit(err);
     defer tldr_pages.close();
 
-    if (args.flag("--list-pages")) {
+    if (args.flag("--list")) {
         try tldr_pages.listPages(allocator, stdout);
         std.process.exit(0);
     }
@@ -70,8 +70,8 @@ pub fn main() anyerror!void {
         std.process.exit(0);
     }
 
-    if (args.flag("--list-os")) {
-        try tldr_pages.listOs(allocator, stdout);
+    if (args.flag("--list-platforms")) {
+        try tldr_pages.listPlatforms(allocator, stdout);
         std.process.exit(0);
     }
 
@@ -88,16 +88,16 @@ pub fn main() anyerror!void {
 fn errorExit(e: anyerror) !void {
     const err = std.log.err;
     switch (e) {
-        error.DownloadFailedZeroSize => err("Fetching returned zero bytes", .{}),
-        error.AppdataNotFound => err("Appdata directory not found. Rerun with `--fetch`.", .{}),
-        error.RepoDirNotFound => err("TLDR pages cache not found. Rerun with `--fetch`.", .{}),
+        error.DownloadFailedZeroSize => err("Updating returned zero bytes", .{}),
+        error.AppdataNotFound => err("Appdata directory not found. Rerun with `--update`.", .{}),
+        error.RepoDirNotFound => err("TLDR pages cache not found. Rerun with `--update`.", .{}),
         error.LanguageNotSupported => err("Language '{s}' not supported.", .{lang.?}),
-        error.OsNotSupported => err("Operating system '{s}' not supported.", .{os.?}),
+        error.OsNotSupported => err("Operating system '{s}' not supported.", .{platform.?}),
         error.PageNotFound => {
-            if (fetch)
+            if (update)
                 err("Page doesn't exist in tldr-master. Consider contributing it!", .{})
             else
-                err("Page not found. Perhaps try with `--fetch`", .{});
+                err("Page not found. Perhaps try with `--update`", .{});
         },
         error.HostLacksNetworkAddresses,
         error.TemporaryNameServerFailure,
@@ -134,10 +134,10 @@ fn helpExit() noreturn {
         \\ tldr git rebase
         \\
         \\ # Specify the languge and OS of the page
-        \\ tldr --lang es --os osx brew
+        \\ tldr --lang es --platform osx brew
         \\
-        \\ # Fetch fresh TLDR pages and view page for chown
-        \\ tldr --fetch chown
+        \\ # Update fresh TLDR pages and view page for chown
+        \\ tldr --update chown
         \\
         \\
     ) catch unreachable;

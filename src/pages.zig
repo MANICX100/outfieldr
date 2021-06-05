@@ -15,13 +15,13 @@ const repo_dir = "tldr-master";
 pub const Pages = struct {
     appdata: Dir,
     language: ?[]const u8,
-    os: ?[]const u8,
+    platform: ?[]const u8,
 
-    pub fn open(lang: ?[]const u8, os: ?[]const u8) !@This() {
+    pub fn open(lang: ?[]const u8, platform: ?[]const u8) !@This() {
         return @This(){
             .appdata = try appdataDir(false, .{}),
             .language = lang,
-            .os = os,
+            .platform = platform,
         };
     }
 
@@ -29,7 +29,7 @@ pub const Pages = struct {
         this.appdata.close();
     }
 
-    pub fn fetch(allocator: *Allocator, writer: anytype) !void {
+    pub fn update(allocator: *Allocator, writer: anytype) !void {
         var appdata = try appdataDir(true, .{});
         const archive_fname = "master.tar.gz";
         var fd = try appdata.createFile(archive_fname, .{ .read = true });
@@ -77,7 +77,7 @@ pub const Pages = struct {
         }
     }
 
-    pub fn listOs(this: *@This(), allocator: *Allocator, writer: anytype) !void {
+    pub fn listPlatforms(this: *@This(), allocator: *Allocator, writer: anytype) !void {
         var pages_fd = fd: {
             const pages_dirname = try this.pagesDir(allocator);
             defer allocator.free(pages_dirname);
@@ -89,23 +89,23 @@ pub const Pages = struct {
         };
         defer pages_fd.close();
 
-        var os_list = ArrayList([]const u8).init(allocator);
+        var platform_list = ArrayList([]const u8).init(allocator);
         defer {
-            for (os_list.items) |o| allocator.free(o);
-            os_list.deinit();
+            for (platform_list.items) |o| allocator.free(o);
+            platform_list.deinit();
         }
 
         var it = pages_fd.iterate();
         while (try it.next()) |entry| {
             const name = entry.name;
             if (!std.mem.eql(u8, name, "common")) {
-                try os_list.append(try allocator.dupe(u8, name));
+                try platform_list.append(try allocator.dupe(u8, name));
             }
         }
 
-        std.sort.sort([]const u8, os_list.items, u8, std.mem.lessThan);
+        std.sort.sort([]const u8, platform_list.items, u8, std.mem.lessThan);
 
-        for (os_list.items) |o| {
+        for (platform_list.items) |o| {
             try writer.print("{s}\n", .{o});
         }
     }
@@ -191,11 +191,13 @@ pub const Pages = struct {
         defer allocator.free(pages_dir);
         const pages_dir_fd = repo_dir_fd.openDir(pages_dir, .{}) catch return error.LanguageNotSupported;
 
-        const os_dir_fname = this.osDir();
-        const os_dir_fd = pages_dir_fd.openDir(os_dir_fname, .{}) catch return error.OsNotSupported;
+        const platform_dir_fname = this.platformDir();
+        const platform_dir_fd = pages_dir_fd.openDir(platform_dir_fname, .{}) catch {
+            return error.PlatformNotSupported;
+        };
 
         const page_fname = try pageFilename(allocator, command);
-        const page_fd = os_dir_fd.openFile(page_fname, .{}) catch return error.PageNotFound;
+        const page_fd = platform_dir_fd.openFile(page_fname, .{}) catch return error.PageNotFound;
 
         unreachable;
     }
@@ -215,14 +217,14 @@ pub const Pages = struct {
     fn pagePaths(this: *@This(), fba: *Allocator, gpa: *Allocator, command: []const []const u8) ![2][]const u8 {
         const pages_dir = try this.pagesDir(gpa);
         defer gpa.free(pages_dir);
-        const os_dir = this.osDir();
+        const platform_dir = this.platformDir();
         const filename = try pageFilename(gpa, command);
         defer gpa.free(filename);
 
-        const os_path = try std.fs.path.join(fba, &[_][]const u8{
+        const platform_path = try std.fs.path.join(fba, &[_][]const u8{
             repo_dir,
             pages_dir,
-            os_dir,
+            platform_dir,
             filename,
         });
 
@@ -234,7 +236,7 @@ pub const Pages = struct {
         });
 
         return [2][]const u8{
-            os_path,
+            platform_path,
             common_path,
         };
     }
@@ -246,16 +248,16 @@ pub const Pages = struct {
         return std.mem.concat(allocator, u8, &.{ basename, ".md" });
     }
 
-    fn osDir(this: *@This()) []const u8 {
-        return if (this.os) |os|
-            os
+    fn platformDir(this: *@This()) []const u8 {
+        return if (this.platform) |platform|
+            platform
         else
             comptime switch (std.builtin.os.tag) {
                 .linux => "linux",
                 .macos => "osx",
                 .solaris => "sunos",
                 .windows => "windows",
-                else => @compileError("Unsupported OS"),
+                else => @compileError("Unsupported platform"),
             };
     }
 
@@ -288,7 +290,7 @@ pub const Pages = struct {
                 error.NotDir => {
                     try stderr.writer().print(
                         \\Path '{s}' exists but is not a directory.
-                        \\Remove it and retry with `--fetch`
+                        \\Remove it and retry with `--update`
                         \\
                     , .{
                         appdata_path,
