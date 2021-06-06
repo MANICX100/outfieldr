@@ -26,8 +26,8 @@ fn getParams() comptime [10]clap.Param(clap.Help) {
 const params = comptime getParams();
 
 var update: bool = undefined;
-var platform: ?[]const u8 = undefined;
 var lang: []const u8 = undefined;
+var platform: []const u8 = undefined;
 
 pub fn main() anyerror!void {
     var diag: clap.Diagnostic = undefined;
@@ -38,8 +38,8 @@ pub fn main() anyerror!void {
     defer args.deinit();
 
     update = args.flag("--update");
-    platform = args.option("--platform");
     lang = setLang(args.option("--language"));
+    platform = setPlatform(args.option("--platform"));
 
     const positionals: ?[]const []const u8 = pos: {
         const pos = args.positionals();
@@ -102,8 +102,8 @@ fn errorExit(e: anyerror) !void {
         error.DownloadFailedZeroSize => err("Updating returned zero bytes", .{}),
         error.AppdataNotFound => err("Appdata directory not found. Rerun with `--update`.", .{}),
         error.RepoDirNotFound => err("TLDR pages cache not found. Rerun with `--update`.", .{}),
-        error.OsNotSupported => err("Operating system '{s}' not supported.", .{platform.?}),
         error.LanguageNotSupported => err("Language '{s}' not supported.", .{lang}),
+        error.PlatformNotSupported => err("Platform '{s}' not supported for langauge '{s}'.", .{platform, lang}),
         error.PageNotFound => {
             if (update)
                 err("Page doesn't exist in tldr-master. Consider contributing it!", .{})
@@ -151,6 +151,16 @@ fn setLang(lang_flag: ?[]const u8) []const u8 {
     if (lang_flag) |l| return l;
     if (std.os.getenv("LANG")) |l| return l[0 .. std.mem.indexOf(u8, l, "_") orelse l.len];
     return "en";
+}
+
+fn setPlatform(platform_flag: ?[]const u8) []const u8 {
+    return if (platform_flag) |p| p else switch (std.builtin.os.tag) {
+        .linux => "linux",
+        .macos => "osx",
+        .solaris => "sunos",
+        .windows => "windows",
+        else => @compileError("Unsupported platform"),
+    };
 }
 
 fn helpExit() noreturn {

@@ -14,10 +14,10 @@ const repo_dir = "tldr-master";
 
 pub const Pages = struct {
     appdata: Dir,
-    platform: ?[]const u8,
     language: []const u8,
+    platform: []const u8,
 
-    pub fn open(lang: []const u8, platform: ?[]const u8) !@This() {
+    pub fn open(lang: []const u8, platform: []const u8) !@This() {
         return @This(){
             .appdata = try appdataDir(false, .{}),
             .language = lang,
@@ -191,7 +191,7 @@ pub const Pages = struct {
         defer allocator.free(pages_dir);
         const pages_dir_fd = repo_dir_fd.openDir(pages_dir, .{}) catch return error.LanguageNotSupported;
 
-        const platform_dir_fname = this.platformDir();
+        const platform_dir_fname = this.platform;
         const platform_dir_fd = pages_dir_fd.openDir(platform_dir_fname, .{}) catch {
             return error.PlatformNotSupported;
         };
@@ -217,7 +217,7 @@ pub const Pages = struct {
     fn pagePaths(this: *@This(), fba: *Allocator, gpa: *Allocator, command: []const []const u8) ![2][]const u8 {
         const pages_dir = try this.pagesDir(gpa);
         defer gpa.free(pages_dir);
-        const platform_dir = this.platformDir();
+        const platform_dir = this.platform;
         const filename = try pageFilename(gpa, command);
         defer gpa.free(filename);
 
@@ -247,19 +247,6 @@ pub const Pages = struct {
         const basename = try std.mem.join(&fba.allocator, "-", command);
         for (basename) |*c| c.* = std.ascii.toLower(c.*);
         return std.mem.concat(allocator, u8, &.{ basename, ".md" });
-    }
-
-    fn platformDir(this: *@This()) []const u8 {
-        return if (this.platform) |platform|
-            platform
-        else
-            comptime switch (std.builtin.os.tag) {
-                .linux => "linux",
-                .macos => "osx",
-                .solaris => "sunos",
-                .windows => "windows",
-                else => @compileError("Unsupported platform"),
-            };
     }
 
     fn pagesDir(this: *@This(), allocator: *Allocator) ![]const u8 {
