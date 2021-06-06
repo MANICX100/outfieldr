@@ -245,6 +245,7 @@ pub const Pages = struct {
         var path_buf: [std.fs.MAX_PATH_BYTES]u8 = undefined;
         var fba = FixedBufferAllocator.init(&path_buf);
         const basename = try std.mem.join(&fba.allocator, "-", command);
+        for (basename) |*c| c.* = std.ascii.toLower(c.*);
         return std.mem.concat(allocator, u8, &.{ basename, ".md" });
     }
 
