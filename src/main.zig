@@ -2,11 +2,12 @@ const std = @import("std");
 const clap = @import("clap");
 const pages = @import("pages.zig");
 const pretty = @import("pretty.zig");
+const color = @import("color.zig");
 
 const Pages = pages.Pages;
 const GeneralPurposeAllocator = std.heap.GeneralPurposeAllocator;
 
-fn getParams() comptime [8]clap.Param(clap.Help) {
+fn getParams() comptime [9]clap.Param(clap.Help) {
     @setEvalBranchQuota(10_000);
     return [_]clap.Param(clap.Help){
         clap.parseParam("-h, --help            Display this help and exit") catch unreachable,
@@ -16,6 +17,7 @@ fn getParams() comptime [8]clap.Param(clap.Help) {
         clap.parseParam("-l, --list            List all available pages with descriptons") catch unreachable,
         clap.parseParam("--list-langs          List all supported languages") catch unreachable,
         clap.parseParam("--list-platforms      List all supported operating systems") catch unreachable,
+        clap.parseParam("--color <STR>         Enable or disable colored output ([auto|off|on], defaults to 'auto')") catch unreachable,
         clap.parseParam("<POS>...") catch unreachable,
     };
 }
@@ -50,6 +52,8 @@ pub fn main() anyerror!void {
     if (args.flag("--help")) {
         helpExit();
     }
+
+    try setColoredOutput(args.option("--color"));
 
     if (update) {
         Pages.update(allocator, stdout) catch |err| return errorExit(err);
@@ -115,6 +119,25 @@ fn errorExit(e: anyerror) !void {
         },
     }
     std.process.exit(1);
+}
+
+fn setColoredOutput(color_enable: ?[]const u8) !void {
+    color.enabled = en: {
+        if (color_enable) |c| {
+            if (std.mem.eql(u8, c, "auto")) break :en colorAuto();
+            if (std.mem.eql(u8, c, "on")) break :en true;
+            if (std.mem.eql(u8, c, "off")) break :en false;
+
+            try std.io.getStdErr().writer().print("unrecognized color option '{s}'\n", .{c});
+            helpExit();
+        } else {
+            break :en colorAuto();
+        }
+    };
+}
+
+fn colorAuto() bool {
+    if (std.io.getStdOut().isTty()) return true else return false;
 }
 
 fn helpExit() noreturn {

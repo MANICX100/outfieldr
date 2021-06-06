@@ -160,9 +160,9 @@ pages were performed during the benchmarks.
 
 - [X] List all available pages with small description
 
-- [ ] Conform to the [TLDR Client Specification](https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md)
+- [X] Handle terminals that don't like color
 
-- [ ] Handle terminals that don't like color
+- [ ] Conform to the [TLDR Client Specification](https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md)
 
 # Why the name?
 

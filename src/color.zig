@@ -2,6 +2,8 @@ const std = @import("std");
 
 const term_esc = "\x1b[";
 
+pub var enabled: bool = undefined;
+
 pub const Color = enum {
     Black,
     Red,
@@ -20,14 +22,18 @@ pub const Color = enum {
     BrightCyan,
     BrightWhite,
 
-    pub fn reset() comptime []const u8 {
-        return term_esc ++ "0m";
+    pub fn reset() []const u8 {
+        return if (enabled) term_esc ++ "0m" else "";
     }
 
-    pub fn code(comptime this: *const @This()) comptime []const u8 {
-        comptime {
-            @setEvalBranchQuota(2000);
-            return std.fmt.comptimePrint("{s}{}m", .{ term_esc, this.fg() });
+    pub fn code(comptime this: *const @This()) []const u8 {
+        if (enabled) {
+            comptime {
+                @setEvalBranchQuota(2000);
+                return std.fmt.comptimePrint("{s}{}m", .{ term_esc, this.fg() });
+            }
+        } else {
+            return "";
         }
     }
 
