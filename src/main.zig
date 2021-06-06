@@ -13,11 +13,11 @@ fn getParams() comptime [10]clap.Param(clap.Help) {
     return [_]clap.Param(clap.Help){
         clap.parseParam("-h, --help            Display this help and exit") catch unreachable,
         clap.parseParam("-v, --version         Display version information and exit") catch unreachable,
-        clap.parseParam("-L, --lang <STR>      Page language") catch unreachable,
+        clap.parseParam("-L, --language <STR>  Page language") catch unreachable,
         clap.parseParam("-p, --platform <STR>  Platform target") catch unreachable,
         clap.parseParam("-u, --update          Update local TLDR pages cache") catch unreachable,
         clap.parseParam("-l, --list            List all available pages with descriptons") catch unreachable,
-        clap.parseParam("--list-langs          List all supported languages") catch unreachable,
+        clap.parseParam("--list-languages     List all supported languages") catch unreachable,
         clap.parseParam("--list-platforms      List all supported operating systems") catch unreachable,
         clap.parseParam("--color <STR>         Enable or disable colored output ([auto|off|on], defaults to 'auto')") catch unreachable,
         clap.parseParam("<POS>...") catch unreachable,
@@ -38,7 +38,7 @@ pub fn main() anyerror!void {
     defer args.deinit();
 
     update = args.flag("--update");
-    lang = args.option("--lang");
+    lang = args.option("--language");
     platform = args.option("--platform");
 
     const positionals: ?[]const []const u8 = pos: {
@@ -76,7 +76,7 @@ pub fn main() anyerror!void {
         std.process.exit(0);
     }
 
-    if (args.flag("--list-langs")) {
+    if (args.flag("--list-languages")) {
         try tldr_pages.listLangs(allocator, stdout);
         std.process.exit(0);
     }
@@ -165,7 +165,7 @@ fn helpExit() noreturn {
         \\ tldr git rebase
         \\
         \\ # Specify the languge and OS of the page
-        \\ tldr --lang es --platform osx brew
+        \\ tldr --language es --platform osx brew
         \\
         \\ # Update fresh TLDR pages and view page for chown
         \\ tldr --update chown

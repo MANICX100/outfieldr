@@ -23,7 +23,7 @@ tldr --update
 
 To specify language (in this case, español):
 ```
-tldr --lang es bash
+tldr --language es bash
 ```
 
 You can specify the platform too, it defaults to the platform the
@@ -36,13 +36,13 @@ You can list all pages, as well as supported languages and operating
 systems:
 ```
 tldr --list
-tldr --list-langs
+tldr --list-languages
 tldr --list-platforms
 ```
 
 Specifying your language/platform alongside `list-pages` works as expected.
 ```
-tldr --lang fr --platform linux --list-pages
+tldr --language fr --platform linux --list-pages
 ```
 
 For more, try:
