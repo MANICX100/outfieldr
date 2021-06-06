@@ -1,7 +1,7 @@
 const std = @import("std");
 const Builder = std.build.Builder;
 
-pub fn build(b: *Builder) void {
+pub fn build(b: *Builder) !void {
     const target = b.standardTargetOptions(.{});
     const mode = b.standardReleaseOptions();
 
@@ -10,6 +10,25 @@ pub fn build(b: *Builder) void {
     exe.setBuildMode(mode);
     exe.install();
     exe.setOutputDir("bin");
+
+    var code: u8 = undefined;
+    const git_tag = try b.execAllowFail(
+        &.{ "git", "describe", "--tags" },
+        &code,
+        std.ChildProcess.StdIo.Ignore,
+    );
+    const git_hash = try b.execAllowFail(
+        &.{ "git", "rev-parse", "--short", "HEAD" },
+        &code,
+        std.ChildProcess.StdIo.Ignore,
+    );
+    const version = b.fmt("v{s}-{s} ({s}-{s})", .{
+        git_tag[0 .. git_tag.len - 1],
+        git_hash[0 .. git_hash.len - 1],
+        @tagName(std.builtin.cpu.arch),
+        @tagName(std.builtin.os.tag),
+    });
+    exe.addBuildOption([]const u8, "version", version);
 
     for (Packages.all) |pkg| {
         exe.addPackage(pkg);

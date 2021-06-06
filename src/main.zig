@@ -3,14 +3,16 @@ const clap = @import("clap");
 const pages = @import("pages.zig");
 const pretty = @import("pretty.zig");
 const color = @import("color.zig");
+const build_options = @import("build_options");
 
 const Pages = pages.Pages;
 const GeneralPurposeAllocator = std.heap.GeneralPurposeAllocator;
 
-fn getParams() comptime [9]clap.Param(clap.Help) {
+fn getParams() comptime [10]clap.Param(clap.Help) {
     @setEvalBranchQuota(10_000);
     return [_]clap.Param(clap.Help){
         clap.parseParam("-h, --help            Display this help and exit") catch unreachable,
+        clap.parseParam("-v, --version         Display version information and exit") catch unreachable,
         clap.parseParam("-L, --lang <STR>      Page language") catch unreachable,
         clap.parseParam("-p, --platform <STR>  Platform target") catch unreachable,
         clap.parseParam("-u, --update          Update local TLDR pages cache") catch unreachable,
@@ -51,6 +53,11 @@ pub fn main() anyerror!void {
 
     if (args.flag("--help")) {
         helpExit();
+    }
+
+    if (args.flag("--version")) {
+        try stdout.print("outfieldr {s}\n", .{build_options.version});
+        std.process.exit(0);
     }
 
     try setColoredOutput(args.option("--color"));
