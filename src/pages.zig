@@ -14,10 +14,10 @@ const repo_dir = "tldr-master";
 
 pub const Pages = struct {
     appdata: Dir,
-    language: ?[]const u8,
     platform: ?[]const u8,
+    language: []const u8,
 
-    pub fn open(lang: ?[]const u8, platform: ?[]const u8) !@This() {
+    pub fn open(lang: []const u8, platform: ?[]const u8) !@This() {
         return @This(){
             .appdata = try appdataDir(false, .{}),
             .language = lang,
@@ -264,12 +264,11 @@ pub const Pages = struct {
 
     fn pagesDir(this: *@This(), allocator: *Allocator) ![]const u8 {
         const pages_dir = "pages";
-        if (this.language) |lang| {
-            if (!std.mem.eql(u8, lang, "en")) {
-                return std.mem.join(allocator, ".", &[_][]const u8{ pages_dir, lang });
-            }
+        if (!std.mem.eql(u8, this.language, "en")) {
+            return std.mem.join(allocator, ".", &[_][]const u8{ pages_dir, this.language });
+        } else {
+            return allocator.dupe(u8, pages_dir);
         }
-        return allocator.dupe(u8, pages_dir);
     }
 
     fn appdataDir(create: bool, options: Dir.OpenDirOptions) !Dir {
