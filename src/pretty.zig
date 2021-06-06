@@ -81,7 +81,7 @@ const PrettyLine = struct {
             const last = this.contents[this.contents.len - 1];
             if (this.contents.len > 2) {
                 const last_prev = this.contents[this.contents.len - 2];
-                if (last != '}' and last_prev != '}') {
+                if (last != '}' or last_prev != '}') {
                     _ = try writer.write(&[_]u8{last});
                 }
             } else {
