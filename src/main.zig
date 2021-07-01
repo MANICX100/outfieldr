@@ -11,16 +11,16 @@ const GeneralPurposeAllocator = std.heap.GeneralPurposeAllocator;
 fn getParams() comptime [10]clap.Param(clap.Help) {
     @setEvalBranchQuota(10_000);
     return [_]clap.Param(clap.Help){
-        clap.parseParam("-h, --help            Display this help and exit") catch unreachable,
-        clap.parseParam("-v, --version         Display version information and exit") catch unreachable,
-        clap.parseParam("-L, --language <STR>  Page language") catch unreachable,
-        clap.parseParam("-p, --platform <STR>  Platform target") catch unreachable,
-        clap.parseParam("-u, --update          Update local TLDR pages cache") catch unreachable,
-        clap.parseParam("-l, --list            List all available pages with descriptons") catch unreachable,
-        clap.parseParam("--list-languages     List all supported languages") catch unreachable,
-        clap.parseParam("--list-platforms      List all supported operating systems") catch unreachable,
-        clap.parseParam("--color <STR>         Enable or disable colored output ([auto|off|on], defaults to 'auto')") catch unreachable,
-        clap.parseParam("<POS>...") catch unreachable,
+        clap.parseParam("-h, --help                 Display this help and exit") catch unreachable,
+        clap.parseParam("-v, --version              Display version information and exit") catch unreachable,
+        clap.parseParam("-L, --language <language>  Page language") catch unreachable,
+        clap.parseParam("-p, --platform <platform>  Platform target") catch unreachable,
+        clap.parseParam("-u, --update               Update local TLDR pages cache") catch unreachable,
+        clap.parseParam("-l, --list                 List all available pages with descriptons") catch unreachable,
+        clap.parseParam("--list-languages           List all supported languages") catch unreachable,
+        clap.parseParam("--list-platforms           List all supported operating systems") catch unreachable,
+        clap.parseParam("--color <auto|off|on>      Enable or disable colored output (defaults to 'auto')") catch unreachable,
+        clap.parseParam("<page>...") catch unreachable,
     };
 }
 const params = comptime getParams();
