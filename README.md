@@ -73,14 +73,12 @@ recommended.
 
 # Performance
 
-This is the fastest tldr client that I am aware of. It runs ~30 times
-faster than [Tealdeer](https://github.com/dbrgn/tealdeer/). If someone
-knows of a faster client, please open an issue with a link to the
-repository and I will update this section.
+This is the fastest tldr client that I am aware of. If someone knows
+of a faster client, please open an issue with a link to the repository
+and I will update this section.
 
 I benchmarked against a few other tldr programs using
-[Hyperfine](https://github.com/sharkdp/hyperfine), including Tealdeer,
-the C client, and the official Node.js client. These results were
+[Hyperfine](https://github.com/sharkdp/hyperfine). These results were
 consistent on my machine, however they are probably inaccurate due to
 Outfieldr sitting on the lower bound of what Hyperfine is capable of
 measuring.
