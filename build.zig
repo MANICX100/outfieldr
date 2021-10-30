@@ -41,6 +41,10 @@ pub fn build(b: *Builder) !void {
 
     const clean_step = b.step("clean", "Clean build artifacts");
     clean_step.dependOn(cleanStep(b));
+
+    const fmt = b.addFmt(&.{"src"});
+    const fmt_step = b.step("fmt", "Format all source code");
+    fmt_step.dependOn(&fmt.step);
 }
 
 fn cleanStep(b: *Builder) *std.build.Step {
