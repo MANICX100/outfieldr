@@ -42,6 +42,22 @@ pub fn build(b: *Builder) !void {
 
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
+
+    const clean_step = b.step("clean", "Clean build artifacts");
+    clean_step.dependOn(cleanStep(b));
+}
+
+fn cleanStep(b: *Builder) *std.build.Step {
+    const s = b.allocator.create(std.build.Step) catch unreachable;
+    s.* = std.build.Step.init(.Custom, "CleanStep", b.allocator, struct {
+        fn make(step: *std.build.Step) anyerror!void {
+            const cwd = std.fs.cwd();
+            try cwd.deleteTree("bin");
+            try cwd.deleteTree("zig-out");
+            try cwd.deleteTree("zig-cache");
+        }
+    }.make);
+    return s;
 }
 
 const Packages = struct {
