@@ -32,7 +32,7 @@ var platform: []const u8 = undefined;
 pub fn main() anyerror!void {
     var diag: clap.Diagnostic = undefined;
     var args = clap.parse(clap.Help, &params, std.heap.page_allocator, &diag) catch |err| {
-        diag.report(std.io.getStdErr().writer(), err) catch {};
+        diag.report(std.io.getStdErr().writer(), err) catch unreachable;
         helpExit();
     };
     defer args.deinit();
@@ -51,9 +51,7 @@ pub fn main() anyerror!void {
     defer std.debug.assert(!gpa.deinit());
     var allocator = &gpa.allocator;
 
-    if (args.flag("--help")) {
-        helpExit();
-    }
+    if (args.flag("--help")) helpExit();
 
     if (args.flag("--version")) {
         try stdout.print("outfieldr {s}\n", .{build_options.version});
@@ -87,13 +85,12 @@ pub fn main() anyerror!void {
     }
 
     if (positionals) |pos| {
-        const page_contents = tldr_pages.pageContents(allocator, pos) catch |err| return errorExit(err);
+        const page_contents = tldr_pages.pageContents(allocator, pos) catch |err|
+            return errorExit(err);
         defer allocator.free(page_contents);
 
         try pretty.prettify(allocator, page_contents, stdout);
-    } else {
-        helpExit();
-    }
+    } else helpExit();
 }
 
 fn errorExit(e: anyerror) !void {
@@ -103,7 +100,7 @@ fn errorExit(e: anyerror) !void {
         error.AppdataNotFound => err("Appdata directory not found. Rerun with `--update`.", .{}),
         error.RepoDirNotFound => err("TLDR pages cache not found. Rerun with `--update`.", .{}),
         error.LanguageNotSupported => err("Language '{s}' not supported.", .{lang}),
-        error.PlatformNotSupported => err("Platform '{s}' not supported for langauge '{s}'.", .{platform, lang}),
+        error.PlatformNotSupported => err("Platform '{s}' not supported for langauge '{s}'.", .{ platform, lang }),
         error.PageNotFound => {
             if (update)
                 err("Page doesn't exist in tldr-master. Consider contributing it!", .{})
@@ -137,9 +134,7 @@ fn setColoredOutput(color_enable: ?[]const u8) !void {
 
             try std.io.getStdErr().writer().print("unrecognized color option '{s}'\n", .{c});
             helpExit();
-        } else {
-            break :en colorAuto();
-        }
+        } else break :en colorAuto();
     };
 }
 

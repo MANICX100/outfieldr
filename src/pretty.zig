@@ -28,35 +28,30 @@ const PrettyLine = struct {
     };
 
     /// Parse a slice of string slices into a heap array of PrettyLine structs.
-    pub fn parseLines(allocator: *Allocator, line_slices: []const []const u8) ![]@This() {
+    pub fn parseLines(
+        allocator: *Allocator,
+        line_slices: []const []const u8,
+    ) ![]@This() {
         var lines_rich = try allocator.alloc(@This(), line_slices.len);
-        for (line_slices) |l, i| {
-            lines_rich[i] = @This().parseLine(l);
-        }
+        for (line_slices) |l, i| lines_rich[i] = @This().parseLine(l);
         return lines_rich;
     }
 
     pub fn parseLine(l: []const u8) @This() {
-        if (l.len > 0) {
-            return switch (l[0]) {
-                '>' => .{ .line_type = @This().Type.Whatis, .contents = l[2..] },
-                '-' => .{ .line_type = @This().Type.Desc, .contents = l[2..] },
-                '`' => .{ .line_type = @This().Type.Cmd, .contents = l[1 .. l.len - 1] },
-                else => .{ .line_type = @This().Type.Other, .contents = l },
-            };
-        } else {
-            return .{ .line_type = @This().Type.Other, .contents = "" };
-        }
+        if (l.len == 0) return .{ .line_type = .Other, .contents = "" };
+
+        return switch (l[0]) {
+            '>' => .{ .line_type = .Whatis, .contents = l[2..] },
+            '-' => .{ .line_type = .Desc, .contents = l[2..] },
+            '`' => .{ .line_type = .Cmd, .contents = l[1 .. l.len - 1] },
+            else => .{ .line_type = .Other, .contents = l },
+        };
     }
 
     pub fn prettyPrint(this: *const @This(), writer: anytype) !void {
         _ = try writer.write(this.line_type.colorCode());
-
         var ind = this.indentWidth();
-        while (ind > 0) : (ind -= 1) {
-            _ = try writer.write(" ");
-        }
-
+        while (ind > 0) : (ind -= 1) _ = try writer.write(" ");
         try this.printLine(writer);
     }
 
@@ -81,12 +76,9 @@ const PrettyLine = struct {
             const last = this.contents[this.contents.len - 1];
             if (this.contents.len > 2) {
                 const last_prev = this.contents[this.contents.len - 2];
-                if (last != '}' or last_prev != '}') {
+                if (last != '}' or last_prev != '}')
                     _ = try writer.write(&[_]u8{last});
-                }
-            } else {
-                _ = try writer.write(&[_]u8{last});
-            }
+            } else _ = try writer.write(&[_]u8{last});
         }
 
         _ = try writer.write("\n");
@@ -113,9 +105,7 @@ pub fn prettify(allocator: *Allocator, contents: []const u8, writer: anytype) !v
     defer allocator.free(lines_rich);
 
     var buffered_stream = std.io.bufferedWriter(writer);
-    for (lines_rich) |l| {
-        _ = try l.prettyPrint(buffered_stream.writer());
-    }
+    for (lines_rich) |l| _ = try l.prettyPrint(buffered_stream.writer());
     _ = try buffered_stream.write(Color.reset());
     _ = try buffered_stream.write("\n");
 

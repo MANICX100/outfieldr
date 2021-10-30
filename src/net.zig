@@ -24,17 +24,13 @@ pub fn downloadPagesArchive(allocator: *Allocator, fd: File, url: []const u8) !u
     defer allocator.free(buf);
 
     while (true) {
-        const read = reader.read(buf) catch |e| {
-            switch (e) {
-                error.StreamTooLong => return error.NetworkStreamTooLong,
-                else => return e,
-            }
+        const read = reader.read(buf) catch |e| switch (e) {
+            error.StreamTooLong => return error.NetworkStreamTooLong,
+            else => return e,
         };
 
         if (read == 0) break;
-
         size += read;
-
         try writer.writeAll(buf[0..read]);
     }
 

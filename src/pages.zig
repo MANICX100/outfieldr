@@ -62,19 +62,15 @@ pub const Pages = struct {
         var it = repo_dir_fd.iterate();
         while (try it.next()) |entry| {
             const name = entry.name;
-            if (name.len > 6 and std.mem.eql(u8, name[0..6], "pages.")) {
+            if (name.len > 6 and std.mem.eql(u8, name[0..6], "pages."))
                 try langs.append(try allocator.dupe(u8, name[6..]));
-            }
         }
 
         // English dir is just named "pages", so we manually add it.
         try langs.append(try allocator.dupe(u8, "en"));
 
         std.sort.sort([]const u8, langs.items, u8, std.mem.lessThan);
-
-        for (langs.items) |l| {
-            try writer.print("{s}\n", .{l});
-        }
+        for (langs.items) |l| try writer.print("{s}\n", .{l});
     }
 
     pub fn listPlatforms(this: *@This(), allocator: *Allocator, writer: anytype) !void {
@@ -82,7 +78,10 @@ pub const Pages = struct {
             const pages_dirname = try this.pagesDir(allocator);
             defer allocator.free(pages_dirname);
 
-            const pages_path = try std.fs.path.join(allocator, &.{ repo_dir, pages_dirname });
+            const pages_path = try std.fs.path.join(
+                allocator,
+                &.{ repo_dir, pages_dirname },
+            );
             defer allocator.free(pages_path);
 
             break :fd try this.appdata.openDir(pages_path, .{ .iterate = true });
@@ -98,16 +97,12 @@ pub const Pages = struct {
         var it = pages_fd.iterate();
         while (try it.next()) |entry| {
             const name = entry.name;
-            if (!std.mem.eql(u8, name, "common")) {
+            if (!std.mem.eql(u8, name, "common"))
                 try platform_list.append(try allocator.dupe(u8, name));
-            }
         }
 
         std.sort.sort([]const u8, platform_list.items, u8, std.mem.lessThan);
-
-        for (platform_list.items) |o| {
-            try writer.print("{s}\n", .{o});
-        }
+        for (platform_list.items) |o| try writer.print("{s}\n", .{o});
     }
 
     const PageInfo = struct {
@@ -151,7 +146,6 @@ pub const Pages = struct {
         }
 
         std.sort.sort(PageInfo, pages_info.items, u8, PageInfo.sortPageInfo);
-
         try pretty.prettifyPagesList(pages_info, writer);
     }
 
@@ -159,7 +153,8 @@ pub const Pages = struct {
         const reader = std.io.bufferedReader(fd.reader()).reader();
 
         var skip_lines: usize = 2;
-        while (skip_lines > 0) : (skip_lines -= 1) try reader.skipUntilDelimiterOrEof('\n');
+        while (skip_lines > 0) : (skip_lines -= 1)
+            try reader.skipUntilDelimiterOrEof('\n');
 
         var desc_buf = try allocator.alloc(u8, 512);
         defer allocator.free(desc_buf);
@@ -169,12 +164,17 @@ pub const Pages = struct {
         return allocator.dupe(u8, desc);
     }
 
-    pub fn pageContents(this: *@This(), allocator: *Allocator, command: []const []const u8) ![]const u8 {
+    pub fn pageContents(
+        this: *@This(),
+        allocator: *Allocator,
+        command: []const []const u8,
+    ) ![]const u8 {
         var buf: [std.fs.MAX_PATH_BYTES * 2]u8 = undefined;
         var fba = FixedBufferAllocator.init(&buf);
         const page_paths = try this.pagePaths(&fba.allocator, allocator, command);
 
-        const page_fd = this.openFirstFile(&page_paths) catch return this.openError(allocator, command);
+        const page_fd = this.openFirstFile(&page_paths) catch
+            return this.openError(allocator, command);
         defer page_fd.close();
         const page_fd_stat = try page_fd.stat();
 
@@ -183,52 +183,63 @@ pub const Pages = struct {
         return contents[0..bytes_read];
     }
 
-    fn openError(this: *@This(), allocator: *Allocator, command: []const []const u8) ![]const u8 {
-        const appdata_fd = appdataDir(false, .{}) catch return error.AppdataNotFound;
-        const repo_dir_fd = appdata_fd.openDir(repo_dir, .{}) catch return error.RepoDirNotFound;
+    fn openError(
+        this: *@This(),
+        allocator: *Allocator,
+        command: []const []const u8,
+    ) ![]const u8 {
+        const appdata_fd = appdataDir(false, .{}) catch
+            return error.AppdataNotFound;
+        const repo_dir_fd = appdata_fd.openDir(repo_dir, .{}) catch
+            return error.RepoDirNotFound;
 
         const pages_dir = try this.pagesDir(allocator);
         defer allocator.free(pages_dir);
-        const pages_dir_fd = repo_dir_fd.openDir(pages_dir, .{}) catch return error.LanguageNotSupported;
+        const pages_dir_fd = repo_dir_fd.openDir(pages_dir, .{}) catch
+            return error.LanguageNotSupported;
 
         const platform_dir_fname = this.platform;
-        const platform_dir_fd = pages_dir_fd.openDir(platform_dir_fname, .{}) catch {
+        const platform_dir_fd = pages_dir_fd.openDir(platform_dir_fname, .{}) catch
             return error.PlatformNotSupported;
-        };
 
         const page_fname = try pageFilename(allocator, command);
-        const page_fd = platform_dir_fd.openFile(page_fname, .{}) catch return error.PageNotFound;
+        const page_fd = platform_dir_fd.openFile(page_fname, .{}) catch
+            return error.PageNotFound;
 
         unreachable;
     }
 
     fn openFirstFile(this: *@This(), paths: []const []const u8) !File {
-        for (paths) |path| {
-            return this.appdata.openFile(path, .{}) catch |err| {
+        return for (paths) |path| {
+            break this.appdata.openFile(path, .{}) catch |err| {
                 switch (err) {
                     error.FileNotFound => continue,
                     else => return err,
                 }
             };
-        }
-        return error.FileNotFound;
+        } else error.FileNotFound;
     }
 
-    fn pagePaths(this: *@This(), fba: *Allocator, gpa: *Allocator, command: []const []const u8) ![2][]const u8 {
+    fn pagePaths(
+        this: *@This(),
+        fba: *Allocator,
+        gpa: *Allocator,
+        command: []const []const u8,
+    ) ![2][]const u8 {
         const pages_dir = try this.pagesDir(gpa);
         defer gpa.free(pages_dir);
         const platform_dir = this.platform;
         const filename = try pageFilename(gpa, command);
         defer gpa.free(filename);
 
-        const platform_path = try std.fs.path.join(fba, &[_][]const u8{
+        const platform_path = try std.fs.path.join(fba, &.{
             repo_dir,
             pages_dir,
             platform_dir,
             filename,
         });
 
-        const common_path = try std.fs.path.join(fba, &[_][]const u8{
+        const common_path = try std.fs.path.join(fba, &.{
             repo_dir,
             pages_dir,
             "common",
@@ -251,11 +262,14 @@ pub const Pages = struct {
 
     fn pagesDir(this: *@This(), allocator: *Allocator) ![]const u8 {
         const pages_dir = "pages";
-        if (!std.mem.eql(u8, this.language, "en")) {
-            return std.mem.join(allocator, ".", &[_][]const u8{ pages_dir, this.language });
-        } else {
+        if (!std.mem.eql(u8, this.language, "en"))
+            return std.mem.join(
+                allocator,
+                ".",
+                &[_][]const u8{ pages_dir, this.language },
+            )
+        else
             return allocator.dupe(u8, pages_dir);
-        }
     }
 
     fn appdataDir(create: bool, options: Dir.OpenDirOptions) !Dir {
@@ -267,12 +281,10 @@ pub const Pages = struct {
             const stderr = std.io.getStdErr();
             switch (err) {
                 error.FileNotFound => {
-                    if (create) {
+                    return if (create) d: {
                         try std.fs.makeDirAbsolute(appdata_path);
-                        return std.fs.openDirAbsolute(appdata_path, options);
-                    } else {
-                        return error.AppdataNotFound;
-                    }
+                        break :d std.fs.openDirAbsolute(appdata_path, options);
+                    } else error.AppdataNotFound;
                 },
                 error.NotDir => {
                     try stderr.writer().print(

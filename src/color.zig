@@ -27,14 +27,10 @@ pub const Color = enum {
     }
 
     pub fn code(comptime this: *const @This()) []const u8 {
-        if (enabled) {
-            comptime {
-                @setEvalBranchQuota(2000);
-                return std.fmt.comptimePrint("{s}{}m", .{ term_esc, this.fg() });
-            }
-        } else {
-            return "";
-        }
+        return if (enabled) comptime std.fmt.comptimePrint(
+            "{s}{}m",
+            .{ term_esc, this.fg() },
+        ) else "";
     }
 
     fn fg(comptime this: *const @This()) comptime u8 {
