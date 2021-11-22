@@ -40,24 +40,18 @@ pub fn build(b: *Builder) !void {
     run_step.dependOn(&run_cmd.step);
 
     const clean_step = b.step("clean", "Clean build artifacts");
-    clean_step.dependOn(cleanStep(b));
-
-    const fmt = b.addFmt(&.{"src"});
-    const fmt_step = b.step("fmt", "Format all source code");
-    fmt_step.dependOn(&fmt.step);
-}
-
-fn cleanStep(b: *Builder) *std.build.Step {
-    const s = b.allocator.create(std.build.Step) catch unreachable;
-    s.* = std.build.Step.init(.Custom, "CleanStep", b.allocator, struct {
+    clean_step.makeFn = struct {
         fn make(step: *std.build.Step) anyerror!void {
             const cwd = std.fs.cwd();
             try cwd.deleteTree("bin");
             try cwd.deleteTree("zig-out");
             try cwd.deleteTree("zig-cache");
         }
-    }.make);
-    return s;
+    }.make;
+
+    const fmt = b.addFmt(&.{"src"});
+    const fmt_step = b.step("fmt", "Format all source code");
+    fmt_step.dependOn(&fmt.step);
 }
 
 const Packages = struct {
