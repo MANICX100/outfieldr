@@ -10,22 +10,18 @@ const color = @import("color.zig");
 const Pages = pages.Pages;
 const GeneralPurposeAllocator = std.heap.GeneralPurposeAllocator;
 
-fn getParams() [10]clap.Param(clap.Help) {
-    @setEvalBranchQuota(10_000);
-    return [_]clap.Param(clap.Help){
-        clap.parseParam("-h, --help                 Display this help and exit") catch unreachable,
-        clap.parseParam("-v, --version              Display version information and exit") catch unreachable,
-        clap.parseParam("-L, --language <language>  Page language") catch unreachable,
-        clap.parseParam("-p, --platform <platform>  Platform target") catch unreachable,
-        clap.parseParam("-u, --update               Update local TLDR pages cache") catch unreachable,
-        clap.parseParam("-l, --list                 List all available pages with descriptons") catch unreachable,
-        clap.parseParam("--list-languages           List all supported languages") catch unreachable,
-        clap.parseParam("--list-platforms           List all supported operating systems") catch unreachable,
-        clap.parseParam("--color <auto|off|on>      Enable or disable colored output (defaults to 'auto')") catch unreachable,
-        clap.parseParam("<page>...") catch unreachable,
-    };
-}
-const params = getParams();
+const params = [_]clap.Param(clap.Help){
+    clap.parseParam("-h, --help                 Display this help and exit") catch unreachable,
+    clap.parseParam("-v, --version              Display version information and exit") catch unreachable,
+    clap.parseParam("-L, --language <language>  Page language") catch unreachable,
+    clap.parseParam("-p, --platform <platform>  Platform target") catch unreachable,
+    clap.parseParam("-u, --update               Update local TLDR pages cache") catch unreachable,
+    clap.parseParam("-l, --list                 List all available pages with descriptons") catch unreachable,
+    clap.parseParam("--list-languages           List all supported languages") catch unreachable,
+    clap.parseParam("--list-platforms           List all supported operating systems") catch unreachable,
+    clap.parseParam("--color <auto|off|on>      Enable or disable colored output") catch unreachable,
+    clap.parseParam("<page>...") catch unreachable,
+};
 
 var update: bool = undefined;
 var lang: []const u8 = undefined;
