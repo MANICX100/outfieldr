@@ -1,14 +1,16 @@
 const std = @import("std");
+const builtin = @import("builtin");
+const build_options = @import("build_options");
+
 const clap = @import("clap");
 const pages = @import("pages.zig");
 const pretty = @import("pretty.zig");
 const color = @import("color.zig");
-const build_options = @import("build_options");
 
 const Pages = pages.Pages;
 const GeneralPurposeAllocator = std.heap.GeneralPurposeAllocator;
 
-fn getParams() comptime [10]clap.Param(clap.Help) {
+fn getParams() [10]clap.Param(clap.Help) {
     @setEvalBranchQuota(10_000);
     return [_]clap.Param(clap.Help){
         clap.parseParam("-h, --help                 Display this help and exit") catch unreachable,
@@ -23,7 +25,7 @@ fn getParams() comptime [10]clap.Param(clap.Help) {
         clap.parseParam("<page>...") catch unreachable,
     };
 }
-const params = comptime getParams();
+const params = getParams();
 
 var update: bool = undefined;
 var lang: []const u8 = undefined;
@@ -31,7 +33,10 @@ var platform: []const u8 = undefined;
 
 pub fn main() anyerror!void {
     var diag: clap.Diagnostic = undefined;
-    var args = clap.parse(clap.Help, &params, std.heap.page_allocator, &diag) catch |err| {
+    var args = clap.parse(clap.Help, &params, .{
+        .allocator = std.heap.page_allocator,
+        .diagnostic = &diag,
+    }) catch |err| {
         diag.report(std.io.getStdErr().writer(), err) catch unreachable;
         helpExit();
     };
@@ -49,7 +54,7 @@ pub fn main() anyerror!void {
     const stdout = std.io.getStdOut().writer();
     var gpa = GeneralPurposeAllocator(.{}){};
     defer std.debug.assert(!gpa.deinit());
-    var allocator = &gpa.allocator;
+    var allocator = gpa.allocator();
 
     if (args.flag("--help")) helpExit();
 
@@ -149,7 +154,7 @@ fn setLang(lang_flag: ?[]const u8) []const u8 {
 }
 
 fn setPlatform(platform_flag: ?[]const u8) []const u8 {
-    return if (platform_flag) |p| p else switch (std.builtin.os.tag) {
+    return if (platform_flag) |p| p else switch (builtin.os.tag) {
         .linux => "linux",
         .macos => "osx",
         .solaris => "sunos",

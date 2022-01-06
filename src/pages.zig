@@ -29,7 +29,7 @@ pub const Pages = struct {
         this.appdata.close();
     }
 
-    pub fn update(allocator: *Allocator, writer: anytype) !void {
+    pub fn update(allocator: Allocator, writer: anytype) !void {
         var appdata = try appdataDir(true, .{});
         const archive_fname = "master.tar.gz";
         var fd = try appdata.createFile(archive_fname, .{ .read = true });
@@ -49,7 +49,7 @@ pub const Pages = struct {
         _ = try writer.write("Pages successfully updated\n");
     }
 
-    pub fn listLangs(this: *@This(), allocator: *Allocator, writer: anytype) !void {
+    pub fn listLangs(this: *@This(), allocator: Allocator, writer: anytype) !void {
         var repo_dir_fd = try this.appdata.openDir(repo_dir, .{ .iterate = true });
         defer repo_dir_fd.close();
 
@@ -73,7 +73,7 @@ pub const Pages = struct {
         for (langs.items) |l| try writer.print("{s}\n", .{l});
     }
 
-    pub fn listPlatforms(this: *@This(), allocator: *Allocator, writer: anytype) !void {
+    pub fn listPlatforms(this: *@This(), allocator: Allocator, writer: anytype) !void {
         var pages_fd = fd: {
             const pages_dirname = try this.pagesDir(allocator);
             defer allocator.free(pages_dirname);
@@ -109,12 +109,12 @@ pub const Pages = struct {
         name: []const u8,
         desc: []const u8,
 
-        fn sortPageInfo(comptime context: type, lhs: PageInfo, rhs: PageInfo) bool {
+        fn sortPageInfo(comptime _: type, lhs: PageInfo, rhs: PageInfo) bool {
             return std.mem.lessThan(u8, lhs.name, rhs.name);
         }
     };
 
-    pub fn listPages(this: *@This(), allocator: *Allocator, writer: anytype) !void {
+    pub fn listPages(this: *@This(), allocator: Allocator, writer: anytype) !void {
         var pages_info = ArrayList(PageInfo).init(allocator);
         defer {
             for (pages_info.items) |item| {
@@ -126,7 +126,7 @@ pub const Pages = struct {
 
         var buf: [std.fs.MAX_PATH_BYTES * 2]u8 = undefined;
         var fba = FixedBufferAllocator.init(&buf);
-        const page_paths = try this.pagePaths(&fba.allocator, allocator, &.{""});
+        const page_paths = try this.pagePaths(fba.allocator(), allocator, &.{""});
 
         for (page_paths) |path| {
             const pages_dir_path = std.fs.path.dirname(path) orelse unreachable;
@@ -149,7 +149,7 @@ pub const Pages = struct {
         try pretty.prettifyPagesList(pages_info, writer);
     }
 
-    fn pageDescription(allocator: *Allocator, fd: File) ![]const u8 {
+    fn pageDescription(allocator: Allocator, fd: File) ![]const u8 {
         const reader = std.io.bufferedReader(fd.reader()).reader();
 
         var skip_lines: usize = 2;
@@ -166,12 +166,12 @@ pub const Pages = struct {
 
     pub fn pageContents(
         this: *@This(),
-        allocator: *Allocator,
+        allocator: Allocator,
         command: []const []const u8,
     ) ![]const u8 {
         var buf: [std.fs.MAX_PATH_BYTES * 2]u8 = undefined;
         var fba = FixedBufferAllocator.init(&buf);
-        const page_paths = try this.pagePaths(&fba.allocator, allocator, command);
+        const page_paths = try this.pagePaths(fba.allocator(), allocator, command);
 
         const page_fd = this.openFirstFile(&page_paths) catch
             return this.openError(allocator, command);
@@ -185,7 +185,7 @@ pub const Pages = struct {
 
     fn openError(
         this: *@This(),
-        allocator: *Allocator,
+        allocator: Allocator,
         command: []const []const u8,
     ) ![]const u8 {
         const appdata_fd = appdataDir(false, .{}) catch
@@ -203,8 +203,7 @@ pub const Pages = struct {
             return error.PlatformNotSupported;
 
         const page_fname = try pageFilename(allocator, command);
-        const page_fd = platform_dir_fd.openFile(page_fname, .{}) catch
-            return error.PageNotFound;
+        _ = platform_dir_fd.openFile(page_fname, .{}) catch return error.PageNotFound;
 
         unreachable;
     }
@@ -222,8 +221,8 @@ pub const Pages = struct {
 
     fn pagePaths(
         this: *@This(),
-        fba: *Allocator,
-        gpa: *Allocator,
+        fba: Allocator,
+        gpa: Allocator,
         command: []const []const u8,
     ) ![2][]const u8 {
         const pages_dir = try this.pagesDir(gpa);
@@ -252,15 +251,15 @@ pub const Pages = struct {
         };
     }
 
-    fn pageFilename(allocator: *Allocator, command: []const []const u8) ![]const u8 {
+    fn pageFilename(allocator: Allocator, command: []const []const u8) ![]const u8 {
         var path_buf: [std.fs.MAX_PATH_BYTES]u8 = undefined;
         var fba = FixedBufferAllocator.init(&path_buf);
-        const basename = try std.mem.join(&fba.allocator, "-", command);
+        const basename = try std.mem.join(fba.allocator(), "-", command);
         for (basename) |*c| c.* = std.ascii.toLower(c.*);
         return std.mem.concat(allocator, u8, &.{ basename, ".md" });
     }
 
-    fn pagesDir(this: *@This(), allocator: *Allocator) ![]const u8 {
+    fn pagesDir(this: *@This(), allocator: Allocator) ![]const u8 {
         const pages_dir = "pages";
         if (!std.mem.eql(u8, this.language, "en"))
             return std.mem.join(
@@ -275,7 +274,7 @@ pub const Pages = struct {
     fn appdataDir(create: bool, options: Dir.OpenDirOptions) !Dir {
         var buf: [std.fs.MAX_PATH_BYTES]u8 = undefined;
         var fba = FixedBufferAllocator.init(&buf);
-        const appdata_path = try std.fs.getAppDataDir(&fba.allocator, prog_name);
+        const appdata_path = try std.fs.getAppDataDir(fba.allocator(), prog_name);
 
         return std.fs.openDirAbsolute(appdata_path, options) catch |err| {
             const stderr = std.io.getStdErr();

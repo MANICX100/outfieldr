@@ -4,7 +4,7 @@ const zfetch = @import("zfetch");
 const File = std.fs.File;
 const Allocator = std.mem.Allocator;
 
-pub fn downloadPagesArchive(allocator: *Allocator, fd: File, url: []const u8) !usize {
+pub fn downloadPagesArchive(allocator: Allocator, fd: File, url: []const u8) !usize {
     try zfetch.init();
     defer zfetch.deinit();
 

@@ -52,7 +52,7 @@ tldr --help
 
 # Building
 
-You'll need [`zig-0.8.1`](https://ziglang.org/download/) and Git.
+You'll need [`zig-0.9.0`](https://ziglang.org/download/) and Git.
 
 First, you need to init and update the submoduled dependencies:
 ```

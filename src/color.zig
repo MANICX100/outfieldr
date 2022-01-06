@@ -33,7 +33,7 @@ pub const Color = enum {
         ) else "";
     }
 
-    fn fg(comptime this: *const @This()) comptime u8 {
+    fn fg(comptime this: *const @This()) u8 {
         return switch (this.*) {
             .Black => 30,
             .Red => 31,
@@ -54,7 +54,7 @@ pub const Color = enum {
         };
     }
 
-    fn bg(comptime this: *const @This()) comptime u8 {
+    fn bg(comptime this: *const @This()) u8 {
         return this.fg() + 10;
     }
 };

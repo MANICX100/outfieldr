@@ -29,7 +29,7 @@ const PrettyLine = struct {
 
     /// Parse a slice of string slices into a heap array of PrettyLine structs.
     pub fn parseLines(
-        allocator: *Allocator,
+        allocator: Allocator,
         line_slices: []const []const u8,
     ) ![]@This() {
         var lines_rich = try allocator.alloc(@This(), line_slices.len);
@@ -96,7 +96,7 @@ const PrettyLine = struct {
 };
 
 /// Add colors and indentation to the tldr page.
-pub fn prettify(allocator: *Allocator, contents: []const u8, writer: anytype) !void {
+pub fn prettify(allocator: Allocator, contents: []const u8, writer: anytype) !void {
     const line_slices = try lines(allocator, contents);
     defer allocator.free(line_slices);
 
@@ -127,7 +127,7 @@ pub fn prettifyPagesList(pages_list: anytype, writer: anytype) !void {
 }
 
 /// Split up the page by lines.
-fn lines(allocator: *Allocator, contents: []const u8) ![]const []const u8 {
+fn lines(allocator: Allocator, contents: []const u8) ![]const []const u8 {
     const line_slices = try allocator.alloc([]const u8, countLines(contents));
     var slice: usize = 0;
     var end: usize = 0;
