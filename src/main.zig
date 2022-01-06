@@ -32,9 +32,14 @@ var lang: []const u8 = undefined;
 var platform: []const u8 = undefined;
 
 pub fn main() anyerror!void {
+    const stdout = std.io.getStdOut().writer();
+    var gpa = GeneralPurposeAllocator(.{}){};
+    defer std.debug.assert(!gpa.deinit());
+    var allocator = gpa.allocator();
+
     var diag: clap.Diagnostic = undefined;
     var args = clap.parse(clap.Help, &params, .{
-        .allocator = std.heap.page_allocator,
+        .allocator = allocator,
         .diagnostic = &diag,
     }) catch |err| {
         diag.report(std.io.getStdErr().writer(), err) catch unreachable;
@@ -50,11 +55,6 @@ pub fn main() anyerror!void {
         const pos = args.positionals();
         break :pos if (pos.len > 0) pos else null;
     };
-
-    const stdout = std.io.getStdOut().writer();
-    var gpa = GeneralPurposeAllocator(.{}){};
-    defer std.debug.assert(!gpa.deinit());
-    var allocator = gpa.allocator();
 
     if (args.flag("--help")) helpExit();
 
