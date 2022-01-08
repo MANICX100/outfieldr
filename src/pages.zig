@@ -130,7 +130,8 @@ pub const Pages = struct {
 
         for (page_paths) |path| {
             const pages_dir_path = std.fs.path.dirname(path) orelse unreachable;
-            const pages_dir_fd = try this.appdata.openDir(pages_dir_path, .{ .iterate = true });
+            var pages_dir_fd = try this.appdata.openDir(pages_dir_path, .{ .iterate = true });
+            defer pages_dir_fd.close();
 
             var it = pages_dir_fd.iterate();
             while (try it.next()) |entry| {
@@ -180,6 +181,51 @@ pub const Pages = struct {
 
         const contents = try allocator.alloc(u8, page_fd_stat.size);
         const bytes_read = try page_fd.readAll(contents);
+        return contents[0..bytes_read];
+    }
+
+    pub fn randomPageContents(
+        this: *@This(),
+        allocator: Allocator,
+    ) ![]const u8 {
+        var buf: [std.fs.MAX_PATH_BYTES * 2]u8 = undefined;
+        var fba = FixedBufferAllocator.init(&buf);
+        const page_paths = try this.pagePaths(fba.allocator(), allocator, &.{""});
+
+        var page_count: usize = 0;
+        for (page_paths) |path| {
+            const pages_dir_path = std.fs.path.dirname(path) orelse unreachable;
+            var pages_dir_fd = try this.appdata.openDir(pages_dir_path, .{ .iterate = true });
+            defer pages_dir_fd.close();
+
+            var it = pages_dir_fd.iterate();
+            while (try it.next()) |_| page_count += 1;
+        }
+
+        var random_page_index = r: {
+            const seed = std.time.milliTimestamp();
+            var rng = std.rand.DefaultPrng.init(@bitCast(u64, seed));
+            const random = rng.random();
+            break :r random.uintAtMost(usize, page_count);
+        };
+
+        const fd = fd: for (page_paths) |path| {
+            const pages_dir_path = std.fs.path.dirname(path) orelse unreachable;
+            var pages_dir_fd = try this.appdata.openDir(pages_dir_path, .{ .iterate = true });
+            defer pages_dir_fd.close();
+
+            var it = pages_dir_fd.iterate();
+            while (try it.next()) |entry| {
+                random_page_index -= 1;
+                if (random_page_index == 0)
+                    break :fd try pages_dir_fd.openFile(entry.name, .{});
+            }
+        } else unreachable;
+        defer fd.close();
+
+        const fd_stat = try fd.stat();
+        const contents = try allocator.alloc(u8, fd_stat.size);
+        const bytes_read = try fd.readAll(contents);
         return contents[0..bytes_read];
     }
 

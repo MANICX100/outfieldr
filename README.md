@@ -45,6 +45,12 @@ Specifying your language/platform alongside `list-pages` works as expected.
 tldr --language fr --platform linux --list-pages
 ```
 
+You can also fetch a random page, just for fun. This respects your
+language and platform choice too.
+```
+tldr --random
+```
+
 For more, try:
 ```
 tldr --help

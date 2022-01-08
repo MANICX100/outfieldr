@@ -17,6 +17,7 @@ const params = [_]clap.Param(clap.Help){
     clap.parseParam("-p, --platform <platform>  Platform target") catch unreachable,
     clap.parseParam("-u, --update               Update local TLDR pages cache") catch unreachable,
     clap.parseParam("-l, --list                 List all available pages with descriptons") catch unreachable,
+    clap.parseParam("-R, --random               Fetch a random page") catch unreachable,
     clap.parseParam("--list-languages           List all supported languages") catch unreachable,
     clap.parseParam("--list-platforms           List all supported operating systems") catch unreachable,
     clap.parseParam("--color <auto|off|on>      Enable or disable colored output") catch unreachable,
@@ -82,6 +83,13 @@ pub fn main() anyerror!void {
 
     if (args.flag("--list-platforms")) {
         try tldr_pages.listPlatforms(allocator, stdout);
+        std.process.exit(0);
+    }
+
+    if (args.flag("--random")) {
+        const page_contents = tldr_pages.randomPageContents(allocator) catch |err|
+            return errorExit(err);
+        try pretty.prettify(allocator, page_contents, stdout);
         std.process.exit(0);
     }
 
