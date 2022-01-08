@@ -10,18 +10,12 @@ pub fn build(b: *Builder) !void {
 
     var code: u8 = undefined;
     const git_tag = try b.execAllowFail(
-        &.{ "git", "describe", "--tags" },
+        &.{ "git", "describe", "--tag" },
         &code,
         std.ChildProcess.StdIo.Ignore,
     );
-    const git_hash = try b.execAllowFail(
-        &.{ "git", "rev-parse", "--short", "HEAD" },
-        &code,
-        std.ChildProcess.StdIo.Ignore,
-    );
-    const version = b.fmt("v{s}-{s} ({s}-{s})", .{
+    const version = b.fmt("v{s} ({s}-{s})", .{
         git_tag[0 .. git_tag.len - 1],
-        git_hash[0 .. git_hash.len - 1],
         @tagName(builtin.cpu.arch),
         @tagName(builtin.os.tag),
     });
