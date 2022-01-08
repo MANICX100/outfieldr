@@ -7,69 +7,69 @@
 # Usage
 
 To view the TLDR page for `chmod`:
-```
-tldr chmod
-```
+
+    tldr chmod
+
 
 Works with multiple-word pages as well, for example:
-```
-tldr git rebase
-```
+
+    tldr git rebase
+
 
 Update your local cache (you'll need to do this before using it for the first time):
-```
-tldr --update
-```
+
+    tldr --update
+
 
 To specify language (in this case, español):
-```
-tldr --language es bash
-```
+
+    tldr --language es bash
+
 
 You can specify the platform too, it defaults to the platform the
 source was built for.
-```
-tldr --platform osx caffeinate
-```
+
+    tldr --platform osx caffeinate
+
 
 You can list all pages, as well as supported languages and operating
 systems:
-```
-tldr --list
-tldr --list-languages
-tldr --list-platforms
-```
+
+    tldr --list
+    tldr --list-languages
+    tldr --list-platforms
+
 
 Specifying your language/platform alongside `list-pages` works as expected.
-```
-tldr --language fr --platform linux --list-pages
-```
+
+    tldr --language fr --platform linux --list-pages
+
 
 You can also fetch a random page, just for fun. This respects your
 language and platform choice too.
-```
-tldr --random
-```
+
+    tldr --random
+
 
 For more, try:
-```
-tldr --help
-```
+
+    tldr --help
+
 
 # Building
 
 You'll need [`zig-0.9.0`](https://ziglang.org/download/) and Git.
 
 First, you need to init and update the submoduled dependencies:
-```
-git submodule init
-git submodule update
-```
+
+    git submodule init
+    git submodule update
+
 
 Then, you can build the project. To build a release-safe binary, run:
-```
-zig build -Drelease-safe
-```
+
+    zig build -Drelease-safe
+
 
 I recommend you build with `-Drelease-safe`. The performance penalty
 for runtime safety is quite minimal. If you _gotta go fast_ and want
