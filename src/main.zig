@@ -45,7 +45,7 @@ pub fn main() anyerror!void {
     defer args.deinit();
 
     update = args.flag("--update");
-    lang = setLang(args.option("--language"));
+    lang = try setLang(args.option("--language"));
     platform = setPlatform(args.option("--platform"));
 
     const positionals: ?[]const []const u8 = pos: {
@@ -151,9 +151,11 @@ fn colorAuto() bool {
     if (std.io.getStdOut().isTty()) return true else return false;
 }
 
-fn setLang(lang_flag: ?[]const u8) []const u8 {
+fn setLang(lang_flag: ?[]const u8) ![]const u8 {
     if (lang_flag) |l| return l;
-    if (std.os.getenv("LANG")) |l| return l[0 .. std.mem.indexOf(u8, l, "_") orelse l.len];
+    if (builtin.os.tag == .windows) return "en";
+    if (std.os.getenv("LANG")) |l|
+        return l[0 .. std.mem.indexOf(u8, l, "_") orelse l.len];
     return "en";
 }
 
