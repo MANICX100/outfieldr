@@ -27,6 +27,7 @@ const params = [_]clap.Param(clap.Help){
 var update: bool = undefined;
 var lang: []const u8 = undefined;
 var platform: []const u8 = undefined;
+var prog_name: []const u8 = "";
 
 pub fn main() anyerror!void {
     const stdout = std.io.getStdOut().writer();
@@ -43,6 +44,8 @@ pub fn main() anyerror!void {
         helpExit();
     };
     defer args.deinit();
+
+    prog_name = args.exe_arg orelse return error.NoExeName;
 
     update = args.flag("--update");
     lang = try setLang(args.option("--language"));
@@ -172,7 +175,7 @@ fn setPlatform(platform_flag: ?[]const u8) []const u8 {
 fn helpExit() noreturn {
     const stderr = std.io.getStdErr().writer();
 
-    stderr.print("Usage: {s} ", .{std.os.argv[0]}) catch unreachable;
+    stderr.print("Usage: {s} ", .{prog_name}) catch unreachable;
     clap.usage(stderr, &params) catch unreachable;
     stderr.print("\nFlags: \n", .{}) catch unreachable;
     clap.help(stderr, &params) catch unreachable;
