@@ -58,13 +58,11 @@ For more, try:
 
 # Building
 
-You'll need [`zig-0.9.0`](https://ziglang.org/download/) and Git.
+You'll need [`zig-0.9.1`](https://ziglang.org/download/) and Git.
 
 First, you need to init and update the submoduled dependencies:
 
-    git submodule init
-    git submodule update
-
+    git submodule update --init
 
 Then, you can build the project. To build a release-safe binary, run:
 
