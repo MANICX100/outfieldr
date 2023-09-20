@@ -64,10 +64,13 @@ For more, try:
 
 You'll need [`zig-0.9.1`](https://ziglang.org/download/) and Git.
 
-Clone this repo
-cd into dir
-git submodule update --init
-zig build -Drelease-fast
+
+Clone this repo and then `cd` into the working directory
+
+
+    git submodule update --init
+    
+    zig build -Drelease-fast
 
 # Performance
 
