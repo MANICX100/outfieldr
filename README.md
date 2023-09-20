@@ -161,9 +161,6 @@ pages were performed during the benchmarks.
 
 - [X] Handle terminals that don't like color
 
-- [ ] Conform to the [TLDR Client Specification](https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md)
-
-
 # TODO
 
 - [ ] Successfully build against current/ development Zig builds
