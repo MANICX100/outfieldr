@@ -54,37 +54,37 @@ pub fn build(b: *Builder) !void {
 const Packages = struct {
     const clap = std.build.Pkg{
         .name = "clap",
-        .source = std.build.FileSource{ .path = "lib/zig-clap/clap.zig" },
+        .path = std.build.FileSource{ .path = "lib/zig-clap/clap.zig" },
     };
 
     const tar = std.build.Pkg{
         .name = "tar",
-        .source = std.build.FileSource{ .path = "./lib/tar/src/main.zig" },
+        .path = std.build.FileSource{ .path = "./lib/tar/src/main.zig" },
     };
 
     const hzzp = std.build.Pkg{
         .name = "hzzp",
-        .source = std.build.FileSource{ .path = "./lib/hzzp/src/main.zig" },
+        .path = std.build.FileSource{ .path = "./lib/hzzp/src/main.zig" },
     };
 
     const iguanaTLS = std.build.Pkg{
         .name = "iguanaTLS",
-        .source = std.build.FileSource{ .path = "./lib/iguanaTLS/src/main.zig" },
+        .path = std.build.FileSource{ .path = "./lib/iguanaTLS/src/main.zig" },
     };
 
     const network = std.build.Pkg{
         .name = "network",
-        .source = std.build.FileSource{ .path = "./lib/zig-network/network.zig" },
+        .path = std.build.FileSource{ .path = "./lib/zig-network/network.zig" },
     };
 
     const uri = std.build.Pkg{
         .name = "uri",
-        .source = std.build.FileSource{ .path = "./lib/zig-uri/uri.zig" },
+        .path = std.build.FileSource{ .path = "./lib/zig-uri/uri.zig" },
     };
 
     const zfetch = std.build.Pkg{
         .name = "zfetch",
-        .source = std.build.FileSource{ .path = "./lib/zfetch/src/main.zig" },
+        .path = std.build.FileSource{ .path = "./lib/zfetch/src/main.zig" },
         .dependencies = &[_]std.build.Pkg{ hzzp, iguanaTLS, network, uri },
     };
 
