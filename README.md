@@ -141,7 +141,7 @@ Before anyone asks, yes I did do a test run of every client viewing
 the `ip` page before benchmarking, and so no fetching/caching of the
 pages were performed during the benchmarks.
 
-# TODO
+# Features
 
 - [X] Pretty-print tldr pages
 
@@ -160,6 +160,14 @@ pages were performed during the benchmarks.
 - [X] List all available pages with small description
 
 - [X] Handle terminals that don't like color
+
+# TODO
+
+- [ ] Successfully build against current/ development Zig builds
+
+- [ ] Linux
+
+- [ ] Windows
 
 - [ ] Conform to the [TLDR Client Specification](https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md)
 
