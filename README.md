@@ -2,6 +2,10 @@
 
 # A [TLDR](https://github.com/tldr-pages/tldr) client in Zig.
 
+This is taken from vent on gitlab but lacks maintenance and needs fixing for newest versions of Zig and Windows compilation.
+
+I intend to use it as a playground as I work on teaching myself Zig programming.
+
 ![](res/example-ip.png)
 
 # Usage
@@ -60,20 +64,10 @@ For more, try:
 
 You'll need [`zig-0.9.1`](https://ziglang.org/download/) and Git.
 
-First, you need to init and update the submoduled dependencies:
-
-    git submodule update --init
-
-Then, you can build the project. To build a release-safe binary, run:
-
-    zig build -Drelease-safe
-
-
-I recommend you build with `-Drelease-safe`. The performance penalty
-for runtime safety is quite minimal. If you _gotta go fast_ and want
-to disable all runtime safety checks for the most speed possible,
-build with `-Drelease-fast` instead. But again, this is not
-recommended.
+Clone this repo
+cd into dir
+git submodule update --init
+zig build -Drelease-fast
 
 # Performance
 
@@ -81,7 +75,7 @@ This is the fastest tldr client that I am aware of. If someone knows
 of a faster client, please open an issue with a link to the repository
 and I will update this section.
 
-I benchmarked against a few other tldr programs using
+The original author benchmarked against a few other tldr programs using
 [Hyperfine](https://github.com/sharkdp/hyperfine). These results were
 consistent on my machine, however they are probably inaccurate due to
 Outfieldr sitting on the lower bound of what Hyperfine is capable of
@@ -168,13 +162,6 @@ pages were performed during the benchmarks.
 
 # Why the name?
 
-I did a regex on a dictionary to find words that contained the letters
+The original author did a regex on a dictionary to find words that contained the letters
 't', 'l', 'd', and 'r' in that order. This was the word I liked the
 most. Just be thankful it wasn't named _kettledrum_.
-
-# P.S.
-
-This is my first Zig project. I wrote this to primarily to familiarize
-myself with the language. If anybody wants to give feedback on my
-code, positive or negative, I'd much appreciate it. Feel free to open
-an issue, PR, or just message me wherever.
