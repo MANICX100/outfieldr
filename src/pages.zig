@@ -10,7 +10,7 @@ const Dir = std.fs.Dir;
 const File = std.fs.File;
 
 const prog_name = "outfieldr";
-const repo_dir = "tldr-master";
+const repo_dir = "tldr-main";
 
 pub const Pages = struct {
     appdata: Dir,
@@ -31,11 +31,11 @@ pub const Pages = struct {
 
     pub fn update(allocator: Allocator, writer: anytype) !void {
         var appdata = try appdataDir(true, .{});
-        const archive_fname = "master.tar.gz";
+        const archive_fname = "main.tar.gz";
         var fd = try appdata.createFile(archive_fname, .{ .read = true });
         defer fd.close();
 
-        const url = "https://codeload.github.com/tldr-pages/tldr/tar.gz/master";
+        const url = "https://codeload.github.com/tldr-pages/tldr/tar.gz/main";
         try writer.print("Fetching pages archive from {s}\n", .{url});
         const fetch_size = try net.downloadPagesArchive(allocator, fd, url);
         try writer.print("Fetched '{s}' ({} bytes)\n", .{ archive_fname, fetch_size });
