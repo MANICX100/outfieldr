@@ -2,11 +2,9 @@
 
 # A [TLDR](https://github.com/tldr-pages/tldr) client in Zig.
 
-This is taken from vent on gitlab but lacks maintenance and needs fixing for newest versions of Zig and Windows compilation.
-
-I intend to use it as a playground as I work on teaching myself Zig programming.
-
 ![](res/example-ip.png)
+
+This is a fork of [https://gitlab.com/ve-nt/outfieldr](https://gitlab.com/ve-nt/outfieldr) with fixes for Windows compatibility the benchmarks were carried out by the original author.
 
 # Usage
 
@@ -44,9 +42,20 @@ systems:
     tldr --list-platforms
 
 
-Specifying your language/platform alongside `list-pages` works as expected.
+Specifying your language/platform alongside `--list` works as expected.
 
-    tldr --language fr --platform linux --list-pages
+    tldr --list --language fr --platform linux
+
+
+Certain arguments may have both shortform and longform options
+available. Longform is the default. To display in shortform:
+
+    tldr git add --short-options
+
+
+To display both shortform and longform options, ask for both:
+
+    tldr git add --short-options --long-options
 
 
 You can also fetch a random page, just for fun. This respects your
@@ -62,86 +71,81 @@ For more, try:
 
 # Building
 
-You'll need [`zig-0.9.1`](https://ziglang.org/download/) and Git.
+Install [`zig-0.15.1`](https://ziglang.org/download/) and run:
 
-
-Clone this repo and then `cd` into the working directory
-
-
-    git submodule update --init
-    
-    zig build -Drelease-fast
+    $ zig build --release=fast -Dtarget=x86_64-native
 
 # Performance
 
-This is the fastest tldr client that I am aware of. If someone knows
-of a faster client, please open an issue with a link to the repository
-and I will update this section.
+I benchmarked against a few other tldr programs using
+[Hyperfine](https://github.com/sharkdp/hyperfine) with the following
+command:
 
-The original author benchmarked against a few other tldr programs using
-[Hyperfine](https://github.com/sharkdp/hyperfine). These results were
-consistent on my machine, however they are probably inaccurate due to
-Outfieldr sitting on the lower bound of what Hyperfine is capable of
-measuring.
+```sh
+hyperfine --warmup 100 \
+	'./tldr-node-client/bin/tldr git commit' \
+	'./tldr-c-client/tldr git commit' \
+	'./tldr-python-client/tldr.py git commit' \
+	'./tlrc/target/release/tldr git commit' \
+	'./outfieldr/zig-out/bin/tldr git commit' \
+	'./tealdeer/target/release/tldr git commit' \
+	'./tinytldr/tldr git-commit'
+```
 
 Here are the results:
 
-| Program                                                          | Build Flags        | Mean Time (ms) | User (ms) | System (ms) |
-|:-----------------------------------------------------------------|:-------------------|:---------------|:----------|:------------|
-| [Outfieldr](https://gitlab.com/ve-nt/outfieldr)                  | `-Drelease-fast`   | 0.1 ± 0.0      | 0.4       | 0.3         |
-| [Tealdeer](https://github.com/dbrgn/tealdeer/)                   | `--release`        | 3.2 ± 0.2      | 2.1       | 1.6         |
-| [C Client](https://github.com/tldr-pages/tldr-c-client)          | `-O3`              | 3.6 ± 0.5      | 2.4       | 1.8         |
-| [Bash Client](https://github.com/pepa65/tldr-bash-client)        | N/A                | 15.0 ± 1.6     | 13.2      | 3.9         |
-| [Go Client](https://github.com/k3mist/tldr/)                     | Prebuilt from repo | 92.6 ± 1.2     | 87.5      | 5.0         |
-| [Node.js Client](https://github.com/tldr-pages/tldr-node-client) | N/A                | 471.0 ± 5.6    | 480.1     | 49.3        |
+| Program                                                           | Build Flags      | Mean Time (ms)      | User     | System   |
+|:------------------------------------------------------------------|:-----------------|:--------------------|:---------|:---------|
+| [Outfieldr](https://gitlab.com/ve-nt/outfieldr)                   | `--release=safe` | 19.9 µs ± 57.5 µs   | 155.0 µs | 183.9 µs |
+| [TLRC](https://github.com/tldr-pages/tlrc)                        | `--release`      | 398.8 µs ± 106.2 µs | 240.8 µs | 523.9 µs ]
+| [Tealdeer](https://github.com/dbrgn/tealdeer/)                    | `--release`      | 751.0 µs ± 119.7 µs | 324.6 µs | 706.9 µs |
+| [C Client](https://github.com/tldr-pages/tldr-c-client)           | `-O3`            | 1.5 ms ± 0.2 ms     | 0.7 ms   | 1.0 ms   |
+| [Tinytldr](https://github.com/kovmir/tinytldr)                    | `-O3`            | 2.6 ms ± 0.3 ms     | 1.3 ms   | 1.3 ms   |
+| [Python Client](https://github.com/tldr-pages/tldr-python-client) | N/A              | 39.7 ms ± 1.2 ms    | 31.8 ms  | 7.6 ms   |
+| [Node.js Client](https://github.com/tldr-pages/tldr-node-client)  | N/A              | 377.9 ms ± 4.7 ms   | 425.2 ms | 92.1 ms  |
 
 Here is the raw log from Hyperfine:
 
 ```
-Benchmark #1: ./bin/bash_client ip
-  Time (mean ± σ):      15.0 ms ±   1.6 ms    [User: 13.2 ms, System: 3.9 ms]
-  Range (min … max):    13.4 ms …  19.5 ms    183 runs
+Benchmark 1: ./tldr-node-client/bin/tldr git commit
+  Time (mean ± σ):     377.9 ms ±   4.7 ms    [User: 425.2 ms, System: 92.1 ms]
+  Range (min … max):   365.9 ms … 400.2 ms    1000 runs
 
-Benchmark #2: ./bin/c_client ip
-  Time (mean ± σ):       3.6 ms ±   0.5 ms    [User: 2.4 ms, System: 1.8 ms]
-  Range (min … max):     3.2 ms …   6.0 ms    493 runs
+Benchmark 2: ./tldr-c-client/tldr git commit
+  Time (mean ± σ):       1.5 ms ±   0.2 ms    [User: 0.7 ms, System: 1.0 ms]
+  Range (min … max):     1.4 ms …   2.4 ms    1000 runs
 
-Benchmark #3: ./bin/go_client ip
-  Time (mean ± σ):      92.6 ms ±   1.2 ms    [User: 87.5 ms, System: 5.0 ms]
-  Range (min … max):    91.8 ms …  96.9 ms    31 runs
+Benchmark 3: ./tldr-python-client/tldr.py git commit
+  Time (mean ± σ):      39.7 ms ±   1.2 ms    [User: 31.8 ms, System: 7.6 ms]
+  Range (min … max):    36.6 ms …  43.2 ms    1000 runs
 
-Benchmark #4: ./bin/outfieldr ip
-  Time (mean ± σ):       0.1 ms ±   0.0 ms    [User: 0.4 ms, System: 0.3 ms]
-  Range (min … max):     0.0 ms …   0.6 ms    1094 runs
+Benchmark 4: ./tlrc/target/release/tldr git commit
+  Time (mean ± σ):     398.8 µs ± 106.2 µs    [User: 240.8 µs, System: 523.9 µs]
+  Range (min … max):   317.9 µs … 1154.7 µs    1000 runs
 
-Benchmark #5: ./bin/tealdeer ip
-  Time (mean ± σ):       3.2 ms ±   0.2 ms    [User: 2.1 ms, System: 1.6 ms]
-  Range (min … max):     3.0 ms …   5.4 ms    522 runs
+Benchmark 5: ./outfieldr/zig-out/bin/tldr git commit
+  Time (mean ± σ):      19.9 µs ±  57.5 µs    [User: 155.0 µs, System: 183.9 µs]
+  Range (min … max):     0.0 µs … 725.7 µs    1000 runs
 
-Benchmark #6: ./bin/node_modules/tldr/bin/tldr ip
-  Time (mean ± σ):     471.0 ms ±   5.6 ms    [User: 480.1 ms, System: 49.3 ms]
-  Range (min … max):   465.9 ms … 481.8 ms    10 runs
+Benchmark 6: ./tealdeer/target/release/tldr git commit
+  Time (mean ± σ):     751.3 µs ± 119.7 µs    [User: 324.6 µs, System: 706.9 µs]
+  Range (min … max):   664.3 µs … 1579.7 µs    1000 runs
+
+Benchmark 7: ./tinytldr/tldr git-commit
+  Time (mean ± σ):       2.6 ms ±   0.3 ms    [User: 1.3 ms, System: 1.3 ms]
+  Range (min … max):     2.3 ms …   3.5 ms    1000 runs
 
 Summary
-  './bin/outfieldr ip' ran
-   34.06 ± 15.16 times faster than './bin/tealdeer ip'
-   38.35 ± 17.62 times faster than './bin/c_client ip'
-  160.36 ± 72.35 times faster than './bin/bash_client ip'
-  987.72 ± 433.12 times faster than './bin/go_client ip'
- 5021.80 ± 2201.98 times faster than './bin/node_modules/tldr/bin/tldr ip'
+  ./outfieldr/zig-out/bin/tldr git commit ran
+   20.06 ± 58.27 times faster than ./tlrc/target/release/tldr git commit
+   37.79 ± 109.47 times faster than ./tealdeer/target/release/tldr git commit
+   77.67 ± 224.87 times faster than ./tldr-c-client/tldr git commit
+  130.92 ± 378.91 times faster than ./tinytldr/tldr git-commit
+ 1999.62 ± 5783.72 times faster than ./tldr-python-client/tldr.py git commit
+19012.19 ± 54988.72 times faster than ./tldr-node-client/bin/tldr git commit
 ```
 
-As you can see, Outfieldr is the clear winner here, being an order of
-magnitude faster than second place. It's worth noting that the
-[Node.js Client](https://github.com/tldr-pages/tldr-node-client) is
-the slowest by far, taking almost half a second to show you a tldr
-page.
-
-Before anyone asks, yes I did do a test run of every client viewing
-the `ip` page before benchmarking, and so no fetching/caching of the
-pages were performed during the benchmarks.
-
-# Features
+# TODO
 
 - [X] Pretty-print tldr pages
 
@@ -161,18 +165,4 @@ pages were performed during the benchmarks.
 
 - [X] Handle terminals that don't like color
 
-# TODO
-
-- [ ] Successfully build against current/ development Zig builds
-
-- [ ] Linux
-
-- [ ] Windows
-
 - [ ] Conform to the [TLDR Client Specification](https://github.com/tldr-pages/tldr/blob/main/CLIENT-SPECIFICATION.md)
-
-# Why the name?
-
-The original author did a regex on a dictionary to find words that contained the letters
-'t', 'l', 'd', and 'r' in that order. This was the word I liked the
-most. Just be thankful it wasn't named _kettledrum_.

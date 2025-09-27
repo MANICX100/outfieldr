@@ -1,0 +1,6 @@
+.{
+    .name = .outfieldr,
+    .fingerprint = 0x216443aa02b6f819,
+    .version = "1.0.3",
+    .paths = .{""},
+}

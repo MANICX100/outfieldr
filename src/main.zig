@@ -2,107 +2,157 @@ const std = @import("std");
 const builtin = @import("builtin");
 const build_options = @import("build_options");
 
-const clap = @import("clap");
+const args = @import("args.zig");
 const pages = @import("pages.zig");
 const pretty = @import("pretty.zig");
 const color = @import("color.zig");
 
 const Pages = pages.Pages;
-const GeneralPurposeAllocator = std.heap.GeneralPurposeAllocator;
+const DebugAllocator = std.heap.DebugAllocator;
+const Allocator = std.mem.Allocator;
 
-const params = [_]clap.Param(clap.Help){
-    clap.parseParam("-h, --help                 Display this help and exit") catch unreachable,
-    clap.parseParam("-v, --version              Display version information and exit") catch unreachable,
-    clap.parseParam("-L, --language <language>  Page language") catch unreachable,
-    clap.parseParam("-p, --platform <platform>  Platform target") catch unreachable,
-    clap.parseParam("-u, --update               Update local TLDR pages cache") catch unreachable,
-    clap.parseParam("-l, --list                 List all available pages with descriptons") catch unreachable,
-    clap.parseParam("-R, --random               Fetch a random page") catch unreachable,
-    clap.parseParam("--list-languages           List all supported languages") catch unreachable,
-    clap.parseParam("--list-platforms           List all supported operating systems") catch unreachable,
-    clap.parseParam("--color <auto|off|on>      Enable or disable colored output") catch unreachable,
-    clap.parseParam("<page>...") catch unreachable,
-};
+var stdout_buf: [4096]u8 = undefined;
+var stdout_writer: std.fs.File.Writer = undefined;
+pub var stdout: *@TypeOf(stdout_writer.interface) = undefined;
 
-var update: bool = undefined;
+var stderr_buf: [4096]u8 = undefined;
+var stderr_writer: std.fs.File.Writer = undefined;
+pub var stderr: *@TypeOf(stderr_writer.interface) = undefined;
+
+var update: bool = false;
 var lang: []const u8 = undefined;
 var platform: []const u8 = undefined;
-var prog_name: []const u8 = "";
+var command: []const []const u8 = undefined;
+
+var arena: std.heap.ArenaAllocator = .init(std.heap.page_allocator);
+const al = arena.allocator();
 
 pub fn main() anyerror!void {
-    const stdout = std.io.getStdOut().writer();
-    var gpa = GeneralPurposeAllocator(.{}){};
-    defer std.debug.assert(!gpa.deinit());
-    var allocator = gpa.allocator();
+    defer arena.deinit();
+    
+    // Initialize stdout and stderr writers at runtime
+    stdout_writer = std.fs.File.stdout().writer(&stdout_buf);
+    stdout = &stdout_writer.interface;
+    stderr_writer = std.fs.File.stderr().writer(&stderr_buf);
+    stderr = &stderr_writer.interface;
 
-    var diag: clap.Diagnostic = undefined;
-    var args = clap.parse(clap.Help, &params, .{
-        .allocator = allocator,
-        .diagnostic = &diag,
-    }) catch |err| {
-        diag.report(std.io.getStdErr().writer(), err) catch unreachable;
-        helpExit();
+    const arguments = a: {
+        const argv_slices = std.process.argsAlloc(al) catch |err| {
+            const msg = try std.fmt.allocPrint(al, "Failed to allocate arguments: {s}\n", .{@errorName(err)});
+            try stderr.writeAll(msg);
+            return err;
+        };
+        defer std.process.argsFree(al, argv_slices);
+        
+        // Convert [][:0]u8 to [][*:0]u8
+        const argv = try al.alloc([*:0]u8, argv_slices.len);
+        for (argv_slices, 0..) |slice, i| {
+            argv[i] = slice.ptr;
+        }
+        
+        var status: args.Status = undefined;
+        const a = args.parse(al, argv, &status) catch |err| {
+            if (err == args.Error.no_prog_name) {
+                try stderr.writeAll("Empty argv; couldn't get program name\n");
+                return err;
+            }
+
+            const error_msg = try std.fmt.allocPrint(al, "{s}: '{s}'\n", .{ switch (err) {
+                args.Error.missing_argument => "Missing argument",
+                args.Error.bad_color_arg => "Bad color argument",
+                args.Error.unrecognized_argument => "Unrecognized argument",
+                args.Error.no_prog_name => unreachable,
+            }, status.bad_arg });
+            try stderr.writeAll(error_msg);
+            helpExit(if (argv.len > 0) std.mem.span(argv[0]) else "tldr");
+        };
+        break :a a;
     };
-    defer args.deinit();
 
-    prog_name = args.exe_arg orelse return error.NoExeName;
-
-    update = args.flag("--update");
-    lang = try setLang(args.option("--language"));
-    platform = setPlatform(args.option("--platform"));
-
-    const positionals: ?[]const []const u8 = pos: {
-        const pos = args.positionals();
-        break :pos if (pos.len > 0) pos else null;
+    lang = l: {
+        if (arguments.language) |l| break :l l;
+        if (builtin.os.tag == .windows) break :l "en";
+        const lang_var = std.process.getEnvVarOwned(al, "LANG") catch |err| switch (err) {
+            error.EnvironmentVariableNotFound => break :l "en",
+            else => return err,
+        };
+        break :l std.mem.sliceTo(lang_var, '_');
     };
 
-    if (args.flag("--help")) helpExit();
+    platform = if (arguments.platform) |p| p else switch (builtin.os.tag) {
+        .linux => "linux",
+        .macos => "osx",
+        .solaris => "sunos",
+        .windows => "windows",
+        else => @compileError("Unsupported platform"),
+    };
+    if (std.mem.eql(u8, platform, "macos")) platform = "osx";
 
-    if (args.flag("--version")) {
-        try stdout.print("outfieldr {s}\n", .{build_options.version});
-        std.process.exit(0);
+    if (arguments.help) {
+        try args.printUsage(arguments.prog_name, stderr);
+        try stderr.writeAll(args.examples);
+        exit(1);
     }
 
-    try setColoredOutput(args.option("--color"));
+    if (arguments.version) {
+        const version_msg = try std.fmt.allocPrint(al, "outfieldr {s}\n", .{build_options.version});
+        try stdout.writeAll(version_msg);
+        exit(0);
+    }
 
+    color.enabled = en: {
+        const auto = std.fs.File.stdout().isTty();
+        break :en if (arguments.color) |c| switch (c) {
+            .auto => auto,
+            .on => true,
+            .off => false,
+        } else auto;
+    };
+
+    update = arguments.update;
     if (update) {
-        Pages.update(allocator, stdout) catch |err| return errorExit(err);
-        if (positionals == null) std.process.exit(0);
-        _ = try stdout.write("--\n");
+        Pages.update(al, stdout) catch |err| return errorExit(err);
+        if (arguments.positionals == null) exit(0);
+        try stdout.writeAll("--\n");
     }
 
     var tldr_pages = Pages.open(lang, platform) catch |err| return errorExit(err);
     defer tldr_pages.close();
 
-    if (args.flag("--list")) {
-        try tldr_pages.listPages(allocator, stdout);
-        std.process.exit(0);
+    if (arguments.list) {
+        try tldr_pages.listPages(al, stdout);
+        exit(0);
     }
 
-    if (args.flag("--list-languages")) {
-        try tldr_pages.listLangs(allocator, stdout);
-        std.process.exit(0);
+    if (arguments.list_languages) {
+        try tldr_pages.listLangs(al, stdout);
+        exit(0);
     }
 
-    if (args.flag("--list-platforms")) {
-        try tldr_pages.listPlatforms(allocator, stdout);
-        std.process.exit(0);
+    if (arguments.list_platforms) {
+        try tldr_pages.listPlatforms(al, stdout);
+        exit(0);
     }
 
-    if (args.flag("--random")) {
-        const page_contents = tldr_pages.randomPageContents(allocator) catch |err|
+    const options_length: pretty.OptionsLength = o: {
+        if (arguments.short_options and arguments.long_options) break :o .both;
+        if (arguments.short_options) break :o .short;
+        if (arguments.long_options) break :o .long;
+        break :o .long;
+    };
+
+    if (arguments.random) {
+        const page_contents = tldr_pages.randomPageContents(al) catch |err|
             return errorExit(err);
-        try pretty.prettify(allocator, page_contents, stdout);
-        std.process.exit(0);
+        try pretty.prettify(al, page_contents, stdout, options_length);
+        exit(0);
     }
 
-    if (positionals) |pos| {
-        const page_contents = tldr_pages.pageContents(allocator, pos) catch |err|
-            return errorExit(err);
-        defer allocator.free(page_contents);
-
-        try pretty.prettify(allocator, page_contents, stdout);
-    } else helpExit();
+    command = arguments.positionals orelse helpExit(arguments.prog_name);
+    const page_contents = tldr_pages.pageContents(al, command) catch |err|
+        return errorExit(err);
+    try pretty.prettify(al, page_contents, stdout, options_length);
+    exit(0);
 }
 
 fn errorExit(e: anyerror) !void {
@@ -110,14 +160,19 @@ fn errorExit(e: anyerror) !void {
     switch (e) {
         error.DownloadFailedZeroSize => err("Updating returned zero bytes", .{}),
         error.AppdataNotFound => err("Appdata directory not found. Rerun with `--update`.", .{}),
+        error.AppdataMalformed => err("Appdata directory malformed. Fix and rerurn with `--update`", .{}),
         error.RepoDirNotFound => err("TLDR pages cache not found. Rerun with `--update`.", .{}),
         error.LanguageNotSupported => err("Language '{s}' not supported.", .{lang}),
         error.PlatformNotSupported => err("Platform '{s}' not supported for langauge '{s}'.", .{ platform, lang }),
         error.PageNotFound => {
-            if (update)
-                err("Page doesn't exist in tldr-master. Consider contributing it!", .{})
-            else
-                err("Page not found. Perhaps try with `--update`", .{});
+            if (update) {
+                const request_link = l: {
+                    const cmd_part = try std.mem.join(al, "%20", command);
+                    const link_fmt = "https://github.com/tldr-pages/tldr/issues/new?title=page%20request:%20{s}";
+                    break :l try std.fmt.allocPrint(al, link_fmt, .{cmd_part});
+                };
+                err("Page doesn't exist upstream. Consider requesting it:\n\n  {s}\n", .{request_link});
+            } else err("Page not found. Perhaps try with `--update`", .{});
         },
         error.HostLacksNetworkAddresses,
         error.TemporaryNameServerFailure,
@@ -128,75 +183,23 @@ fn errorExit(e: anyerror) !void {
         error.NotConnected,
         error.AddressInUse,
         error.NetworkStreamTooLong,
+        error.StreamTooLong,
         => err("Network error '{s}'", .{@errorName(e)}),
         else => {
             err("Unknown error '{s}'", .{@errorName(e)});
             return e;
         },
     }
-    std.process.exit(1);
+    exit(1);
 }
 
-fn setColoredOutput(color_enable: ?[]const u8) !void {
-    color.enabled = en: {
-        if (color_enable) |c| {
-            if (std.mem.eql(u8, c, "auto")) break :en colorAuto();
-            if (std.mem.eql(u8, c, "on")) break :en true;
-            if (std.mem.eql(u8, c, "off")) break :en false;
-
-            try std.io.getStdErr().writer().print("unrecognized color option '{s}'\n", .{c});
-            helpExit();
-        } else break :en colorAuto();
-    };
+fn helpExit(prog_name: []const u8) noreturn {
+    args.printUsage(prog_name, stderr) catch unreachable;
+    exit(1);
 }
 
-fn colorAuto() bool {
-    if (std.io.getStdOut().isTty()) return true else return false;
-}
-
-fn setLang(lang_flag: ?[]const u8) ![]const u8 {
-    if (lang_flag) |l| return l;
-    if (builtin.os.tag == .windows) return "en";
-    if (std.os.getenv("LANG")) |l|
-        return l[0 .. std.mem.indexOf(u8, l, "_") orelse l.len];
-    return "en";
-}
-
-fn setPlatform(platform_flag: ?[]const u8) []const u8 {
-    return if (platform_flag) |p| p else switch (builtin.os.tag) {
-        .linux => "linux",
-        .macos => "osx",
-        .solaris => "sunos",
-        .windows => "windows",
-        else => @compileError("Unsupported platform"),
-    };
-}
-
-fn helpExit() noreturn {
-    const stderr = std.io.getStdErr().writer();
-
-    stderr.print("Usage: {s} ", .{prog_name}) catch unreachable;
-    clap.usage(stderr, &params) catch unreachable;
-    stderr.print("\nFlags: \n", .{}) catch unreachable;
-    clap.help(stderr, &params) catch unreachable;
-    _ = stderr.write(
-        \\
-        \\Examples:
-        \\
-        \\ # View the TLDR page for ip:
-        \\ tldr ip
-        \\
-        \\ # View a multi-word TLDR page:
-        \\ tldr git rebase
-        \\
-        \\ # Specify the languge and OS of the page
-        \\ tldr --language es --platform osx brew
-        \\
-        \\ # Update fresh TLDR pages and view page for chown
-        \\ tldr --update chown
-        \\
-        \\
-    ) catch unreachable;
-
-    std.process.exit(1);
+fn exit(code: u8) noreturn {
+    stdout.flush() catch unreachable;
+    stderr.flush() catch unreachable;
+    std.process.exit(code);
 }
