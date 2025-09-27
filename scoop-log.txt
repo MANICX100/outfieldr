@@ -1,1 +1,0 @@
-scoop install: Option --verbose not recognized.
